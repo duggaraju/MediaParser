@@ -52,6 +52,13 @@ namespace Media.ISO.Boxes
             return base.GetBoxSize() + 8 + CompatibleBrands.Count*4;
         }
 
+        protected override void WriteBoxContent(BoxWriter writer)
+        {
+            writer.WriteInt32(MajorBrand);
+            writer.WriteInt32(MinorVersion);
+            CompatibleBrands.ForEach(writer.WriteInt32);
+        }
+
         public override string ToString()
         {
             return base.ToString() +

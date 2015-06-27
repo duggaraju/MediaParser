@@ -39,6 +39,8 @@
     <Compile Include="Boxes\FreeBox.cs" />
     <Compile Include="Boxes\FullBox.cs" />
     <Compile Include="Boxes\MediaDataBox.cs" />
+    <Compile Include="Boxes\MovieBox.cs" />
+    <Compile Include="Boxes\TrackBox.cs" />
     <Compile Include="BoxFactory.cs" />
     <Compile Include="BoxConstants.cs" />
     <Compile Include="BoxTypeAttribute.cs" />

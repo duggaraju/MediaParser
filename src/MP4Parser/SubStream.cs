@@ -29,6 +29,11 @@ namespace Media.ISO
             if (baseStream == null)
                 throw new ArgumentNullException("baseStream");
 
+            if (!baseStream.CanRead || !baseStream.CanSeek)
+            {
+                throw new ArgumentException("Stream must be readable and seekable!", "baseStream");
+            }
+
             if (offset < 0 || offset >= baseStream.Length)
                 throw new ArgumentException("Offset cannot be negative or greater than stream length.", "offset");
             
@@ -59,6 +64,13 @@ namespace Media.ISO
         {
             if(_offset + offset > _stream.Length)
                 throw new ArgumentException("", "offset");
+            var remaining = Length - Position;
+            if (remaining <= 0)
+                return 0;
+            if (remaining < count)
+            {
+                count = (int) remaining;
+            }
             return _stream.Read(buffer, offset, count);
         }
 

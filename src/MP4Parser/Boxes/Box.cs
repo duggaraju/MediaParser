@@ -103,10 +103,10 @@ namespace Media.ISO.Boxes
 	        }
 	    }
 
-        public static long ParseHeader(BoxReader reader, out uint type, out long size, out Guid extendedType)
+        public static long ParseHeader(BoxReader reader, out uint type, out long size, out Guid? extendedType)
         {
             long offset = reader.BaseStream.Position;
-            extendedType = Guid.Empty;
+            extendedType = null;
             size = reader.ReadUInt32();
             type = reader.ReadUInt32();
             if (size == 0)
@@ -169,19 +169,25 @@ namespace Media.ISO.Boxes
         /// </summary>
         public void Write(BoxWriter writer)
         {
+            var startPosition = writer.BaseStream.Position;
             WriteBoxHeader(writer);
             if (CanHaveChildren)
             {
-                WriteChildren(writer);
+                Children.ForEach(child => child.Write(writer));
             }
             else
             {
                 WriteBoxContent(writer);
             }
+            if (writer.BaseStream.Position - startPosition > Size)
+            {
+                Trace.TraceError("Wrote more bytes for Box:{0} Expected:{1} Actual:{2}", Name, Size,
+                    writer.BaseStream.Position - startPosition);
+            }
         }
 
         protected virtual void WriteBoxHeader(BoxWriter writer)
-	    {
+        {
 	        if (Size < uint.MaxValue)
 	        {
 	            writer.WriteUInt32((uint) Size);
@@ -201,20 +207,21 @@ namespace Media.ISO.Boxes
 	    {
 	        if (BoxBody != null)
 	        {
+	            var old = writer.BaseStream.Position;
+	            BoxBody.Position = 0;
 	            BoxBody.CopyTo(writer.BaseStream);
-	        }
+                Trace.TraceInformation("Writing Box :{0} Size:{1} Old:{2} New:{3}", Name, Size,old, writer.BaseStream.Position);
+            }
 	    }
 
-	    private void WriteChildren(BoxWriter writer)
-	    {
-	        foreach(var child in Children)
-                child.Write(writer);
-	    }
-
-        public long UpdateSize()
+	    public long UpdateSize()
         {
             return GetBoxSize() + Children.Sum(child => child.UpdateSize());
         }
 
+	    public IEnumerable<T> GetChildren<T>() where T:Box
+	    {
+	        return Children.Where(child => child.GetType() == typeof(T)).Cast<T>();
+	    }
     }
 }

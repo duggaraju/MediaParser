@@ -15,7 +15,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Media.ISO.Boxes;
 
 namespace Media.ISO.MP4Parser.Tests
 {
@@ -43,18 +45,40 @@ namespace Media.ISO.MP4Parser.Tests
             }
         }
 
+        private static void DisplayBox(Box box, int index)
+        {
+            StringBuilder indent = new StringBuilder();
+            for (int i = 0; i < index; ++i)
+            {
+                indent.Append("===>");
+            }
+            Trace.TraceInformation("{2}Box:{0} Size:{1}", box.Name, box.Size, indent);
+            box.Children.ForEach(child => DisplayBox(child, index+1));
+        }
 
         [TestMethod]
         public void ParseTest()
         {
+            var tempFile = Path.GetTempFileName();
+            var originalFile = new FileInfo(LocalTestContent);
+            Trace.TraceInformation("Original File: {0} {1}", LocalTestContent, originalFile.Length);
             using (var stream = new FileStream(LocalTestContent, FileMode.Open))
             {
                 var boxes = BoxFactory.Parse(stream).ToList();
-                foreach (var box in boxes)
+                boxes.ForEach(box => DisplayBox(box, 0));
+                using (var filestream = new FileStream(tempFile, FileMode.OpenOrCreate))
                 {
-                    Trace.TraceInformation("Box:{0}", box);
+                    var writer = new BoxWriter(filestream);
+                    foreach (var box in boxes)
+                    {
+                        box.Write(writer);
+                    }
+                    writer.Close();
                 }
             }
+            var newFile = new FileInfo(tempFile);
+            Assert.AreEqual(originalFile.Length, newFile.Length);
+
         }
     }
 }

@@ -14,11 +14,17 @@
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.MediaDataBox)]
-    public class MediaDataBox : Box
+    [BoxType(BoxConstants.TrackBox)]
+    public class TrackBox : Box
     {
-        public MediaDataBox() : base(BoxConstants.MediaDataBox)
+        public TrackBox()
+            : base(BoxConstants.TrackBox)
         {
+        }
+
+        public override bool CanHaveChildren
+        {
+            get { return true; }
         }
     }
 }

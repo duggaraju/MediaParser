@@ -12,13 +12,26 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System.Collections.Generic;
+
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.MediaDataBox)]
-    public class MediaDataBox : Box
+    [BoxType(BoxConstants.MovieBox)]
+    public class MovieBox : Box
     {
-        public MediaDataBox() : base(BoxConstants.MediaDataBox)
+        public MovieBox()
+            : base(BoxConstants.MovieBox)
         {
+        }
+
+        public override bool CanHaveChildren
+        {
+            get { return true; }
+        }
+
+        public IEnumerable<TrackBox> Tracks
+        {
+            get { return GetChildren<TrackBox>(); }
         }
     }
 }

@@ -104,7 +104,7 @@ namespace Media.ISO
         {
             uint type;
             long size;
-            Guid extendedType;
+            Guid? extendedType;
             long boxOffset = reader.BaseStream.Position;
             Box.ParseHeader(reader, out type, out size, out extendedType);
             Trace.TraceInformation("Found Box:{0} Size:{1} at Offset:{2:x}", type.GetBoxName(), size, boxOffset);
