@@ -61,14 +61,24 @@ namespace Media.ISO.Boxes
 		internal void Parse(BoxReader reader, long boxOffset, int depth = int.MaxValue)
         {
             long boxEnd = Size == 0 ? reader.BaseStream.Length : boxOffset + Size;
+		    try
+		    {
+                ParseBoxHeader(reader);
 
-            if (CanHaveChildren && depth > 0)
-		    {
-		        ParseChildren(reader, boxEnd);
+                if (CanHaveChildren && depth > 0)
+                {
+                    ParseChildren(reader, boxEnd);
+                }
+                else
+                {
+                    ParseBoxContent(reader, boxEnd);
+                }
 		    }
-		    else
+		    catch (Exception e)
 		    {
-		        ParseBoxContent(reader, boxEnd);
+                throw new ParseException(
+                    string.Format("Failed to parse box content for box:{0} at offset:{1}", Name, reader.BaseStream.Position), 
+                    e);
 		    }
 
 		    if (reader.BaseStream.Position != boxEnd)
@@ -78,10 +88,25 @@ namespace Media.ISO.Boxes
 		    }
         }
 
+        /// <summary>
+        /// Parse the box header. 
+        /// </summary>
+        protected virtual void ParseBoxHeader(BoxReader reader)
+        {
+            // We already know the type and size of the box before we are here. so nothing to parse.
+        }
+
+
 	    protected virtual void ParseBoxContent(BoxReader reader, long boxEnd)
 	    {
 	        long boxBody = boxEnd - reader.BaseStream.Position;
-	        if (reader.BaseStream.CanSeek)
+	        if (reader.BaseStream.Length - reader.BaseStream.Position < boxBody)
+	        {
+	            throw new ParseException(
+                    string.Format("The stream is smaller than the box size. Box:{0} Size:{1} stream Offset:{2} Length:{3}", Name, Size, reader.BaseStream.Position, reader.BaseStream.Length));
+	        }
+
+	        if (boxBody > 0 && reader.BaseStream.CanSeek)
 	        {
 	            BoxBody = new SubStream(reader.BaseStream, reader.BaseStream.Position, boxBody);
 	            reader.BaseStream.Seek(boxEnd, SeekOrigin.Begin);
@@ -107,22 +132,31 @@ namespace Media.ISO.Boxes
         {
             long offset = reader.BaseStream.Position;
             extendedType = null;
-            size = reader.ReadUInt32();
-            type = reader.ReadUInt32();
-            if (size == 0)
+
+            try
             {
-                //box is till the end of the stream.
-                size = long.MinValue;
+                size = reader.ReadUInt32();
+                type = reader.ReadUInt32();
+                if (size == 0)
+                {
+                    //box is till the end of the stream.
+                    size = reader.BaseStream.Length;
+                }
+                else if (size == 1)
+                {
+                    size = reader.ReadInt64();
+                }
+
+                if (type == BoxConstants.UuidBoxType)
+                {
+                    extendedType = reader.ReadGuid();
+                }
             }
-            else if( size == 1)
+            catch (Exception e)
             {
-                size = reader.ReadInt64();
+                throw new ParseException("Failed to parse box details!", e);
             }
 
-            if(type == BoxConstants.UuidBoxType)
-            {
-                extendedType = reader.ReadGuid();
-            }
             return reader.BaseStream.Position - offset;
         }
 
@@ -142,7 +176,7 @@ namespace Media.ISO.Boxes
         /// Compute the size of the box itself (without any children).
         /// </summary>
         /// <returns></returns>
-	    protected virtual long GetBoxSize()
+	    protected virtual long GetBoxHeaderSize()
 	    {
 	        long size = 8;
             
@@ -158,6 +192,30 @@ namespace Media.ISO.Boxes
 
             return size;
 	    }
+
+	    protected virtual long GetBoxContentSize()
+	    {
+            return BoxBody == null ? 0 : BoxBody.Length;
+        }
+
+        /// <summary>
+        /// Compute the size of the box and upadte the Size field.
+        /// </summary>
+        /// <returns>The compute size</returns>
+        public long ComputeSize()
+        {
+            long size = GetBoxHeaderSize();
+            if (CanHaveChildren)
+            {
+                size += Children.Sum(child => child.ComputeSize());
+            }
+            else
+            {
+                size += GetBoxContentSize();
+            }
+            Size = size;
+            return size;
+        }
 
 	    public virtual bool CanHaveChildren
 	    {
@@ -183,7 +241,15 @@ namespace Media.ISO.Boxes
             {
                 Trace.TraceError("Wrote more bytes for Box:{0} Expected:{1} Actual:{2}", Name, Size,
                     writer.BaseStream.Position - startPosition);
+                throw new ParseException(
+                    string.Format(
+                        "Serialization wrote more bytes than the size of the box! Exptected:{0} Actual:{1}",
+                        Size,
+                        writer.BaseStream.Position - startPosition));
             }
+
+            Trace.TraceInformation(
+                "Writing Box :{0} Size:{1} Start:{2} End:{3}", Name, Size, startPosition, writer.BaseStream.Position);
         }
 
         protected virtual void WriteBoxHeader(BoxWriter writer)
@@ -203,25 +269,26 @@ namespace Media.ISO.Boxes
 	        }
 	    }
 
+        /// <summary>
+        /// Writes the box contents to the writer.
+        /// </summary>
 	    protected virtual void WriteBoxContent(BoxWriter writer)
 	    {
 	        if (BoxBody != null)
 	        {
-	            var old = writer.BaseStream.Position;
 	            BoxBody.Position = 0;
 	            BoxBody.CopyTo(writer.BaseStream);
-                Trace.TraceInformation("Writing Box :{0} Size:{1} Old:{2} New:{3}", Name, Size,old, writer.BaseStream.Position);
             }
 	    }
-
-	    public long UpdateSize()
-        {
-            return GetBoxSize() + Children.Sum(child => child.UpdateSize());
-        }
 
 	    public IEnumerable<T> GetChildren<T>() where T:Box
 	    {
 	        return Children.Where(child => child.GetType() == typeof(T)).Cast<T>();
+	    }
+
+	    public T GetSingleChild<T>() where T : Box
+	    {
+	        return GetChildren<T>().Single();
 	    }
     }
 }

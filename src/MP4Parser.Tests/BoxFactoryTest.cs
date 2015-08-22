@@ -31,7 +31,9 @@ namespace Media.ISO.MP4Parser.Tests
         private const string TestContent2 =
             @"http://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4";
 
-        private const string LocalTestContent = @"BigBuckBunny_320x180.mp4";
+        private const string LocalMp4TestContent = @"BigBuckBunny_320x180.mp4";
+
+        private const string LocalFmp4TestContent = @"BigBuckBunny_331.ismv";
 
         [TestMethod]
         public void TestGetType()
@@ -56,29 +58,48 @@ namespace Media.ISO.MP4Parser.Tests
             box.Children.ForEach(child => DisplayBox(child, index+1));
         }
 
-        [TestMethod]
-        public void ParseTest()
+        /// <summary>
+        /// Helper to test file deserialization and serialization with round trip.
+        /// </summary>
+        /// <param name="fileName"></param>
+        private void FileParsingHelper(string fileName)
         {
-            var tempFile = Path.GetTempFileName();
-            var originalFile = new FileInfo(LocalTestContent);
-            Trace.TraceInformation("Original File: {0} {1}", LocalTestContent, originalFile.Length);
-            using (var stream = new FileStream(LocalTestContent, FileMode.Open))
+            var outputFile = Path.GetTempFileName();
+            var originalFile = new FileInfo(fileName);
+            using (var stream = new FileStream(fileName, FileMode.Open))
             {
                 var boxes = BoxFactory.Parse(stream).ToList();
-                boxes.ForEach(box => DisplayBox(box, 0));
-                using (var filestream = new FileStream(tempFile, FileMode.OpenOrCreate))
+                using (var filestream = new FileStream(outputFile, FileMode.OpenOrCreate))
                 {
                     var writer = new BoxWriter(filestream);
-                    foreach (var box in boxes)
+                    foreach(var box in boxes)
                     {
+                        DisplayBox(box, 0);
                         box.Write(writer);
                     }
                     writer.Close();
                 }
             }
-            var newFile = new FileInfo(tempFile);
+            var newFile = new FileInfo(outputFile);
+            Trace.TraceInformation("Original File: {0} - {1}\n New File:{2} {3}",
+                fileName,
+                originalFile.Length,
+                outputFile,
+                newFile.Length
+                );
             Assert.AreEqual(originalFile.Length, newFile.Length);
+        }
 
+        [TestMethod]
+        public void Mp4ParseTest()
+        {
+            FileParsingHelper(LocalMp4TestContent);
+        }
+
+        [TestMethod]
+        public void FragmentedMp4ParseTest()
+        {
+            FileParsingHelper(LocalFmp4TestContent);            
         }
     }
 }

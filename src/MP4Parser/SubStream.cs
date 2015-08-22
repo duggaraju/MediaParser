@@ -63,7 +63,7 @@ namespace Media.ISO
         public override int Read(byte[] buffer, int offset, int count)
         {
             if(_offset + offset > _stream.Length)
-                throw new ArgumentException("", "offset");
+                throw new ArgumentException("Offset out of range!", "offset");
             var remaining = Length - Position;
             if (remaining <= 0)
                 return 0;

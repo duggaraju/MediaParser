@@ -22,23 +22,30 @@ namespace Media.ISO.Boxes
     public class FullBox : Box
     {
 
-        public FullBox(uint type, Guid? extendedType) :
+        public FullBox(uint type, Guid? extendedType = null) :
             base(type, extendedType)
         {
             
         }
 
-        protected override long GetBoxSize()
+        /// <summary>
+        /// Construct a full box using a box name.
+        /// </summary>
+        public FullBox(string boxName) : base(boxName)
         {
-            return base.GetBoxSize() + 4;
         }
 
-        protected override void ParseBoxContent(BoxReader reader, long boxEnd)
+        protected override long GetBoxHeaderSize()
+        {
+            return base.GetBoxHeaderSize() + 4;
+        }
+
+        protected override sealed void ParseBoxHeader(BoxReader reader)
         {
             _versionAndFlags = reader.ReadUInt32();
         }
 
-        protected override void WriteBoxHeader(BoxWriter writer)
+        protected override sealed void WriteBoxHeader(BoxWriter writer)
         {
             base.WriteBoxHeader(writer);
             writer.WriteUInt32(_versionAndFlags);
@@ -47,13 +54,25 @@ namespace Media.ISO.Boxes
         public byte Version
         {
             get { return (byte) (_versionAndFlags >> 24); }
-            set { _versionAndFlags |= ((uint)value << 24); }
+            set
+            {
+                var version = (uint) value << 24;
+                _versionAndFlags = version | Flags;
+            }
         }
 
         public uint Flags
         {
-            get { return (_versionAndFlags & 0xFFFFF); }
-            set { _versionAndFlags |= (value & 0xFFFFF); }
+            get { return (_versionAndFlags & 0xFFFFFF); }
+            set
+            {
+                if (value > 0xFFFFFF)
+                {
+                    throw new ArgumentException("Flags cannot be greater than 0xFFFFFF", "value");
+                }
+                _versionAndFlags &= 0xFF000000;
+                _versionAndFlags |= value;
+            }
         }
 
         private uint _versionAndFlags;

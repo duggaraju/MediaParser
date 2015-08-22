@@ -12,19 +12,24 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System.Linq;
+
 namespace Media.ISO.Boxes
 {
     [BoxType(BoxConstants.TrackBox)]
-    public class TrackBox : Box
+    public class TrackBox : ContainerBox
     {
         public TrackBox()
             : base(BoxConstants.TrackBox)
         {
         }
 
-        public override bool CanHaveChildren
+        public TrackHeaderBox Header
         {
-            get { return true; }
+            get
+            {
+                return GetChildren<TrackHeaderBox>().Single();
+            }
         }
     }
 }

@@ -47,9 +47,9 @@ namespace Media.ISO.Boxes
             }
         }
 
-        protected override long GetBoxSize()
+        protected override long GetBoxContentSize()
         {
-            return base.GetBoxSize() + 8 + CompatibleBrands.Count*4;
+            return 8 + CompatibleBrands.Count*4;
         }
 
         protected override void WriteBoxContent(BoxWriter writer)
@@ -65,7 +65,5 @@ namespace Media.ISO.Boxes
                    string.Format("Major:{0} Minor:{1}, Brands:{2}", MajorBrandName, MinorVersion,
                        string.Join(",", CompatibleBrands.Select(brand => ((uint)brand).GetBoxName())));
         }
-
-        public override bool CanHaveChildren { get { return false; } }
     }
 }

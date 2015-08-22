@@ -95,9 +95,9 @@ namespace Media.ISO
                 throw new ArgumentException("bytes must be 1/2/3/4");
             }
 
-            for (int i = 0; i < bytes; ++i)
+            for (int i = bytes - 1 ; i >= 0; --i)
             {
-                byte output = (byte)(value >> (bytes * 8));
+                byte output = (byte)(value >> (i * 8));
                 Write(output);
             }
         }

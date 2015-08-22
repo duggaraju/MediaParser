@@ -33,7 +33,7 @@ namespace Media.ISO.Boxes
 
         protected override void WriteBoxContent(BoxWriter writer)
         {
-            long remaining = Size - GetBoxSize();
+            long remaining = Size - GetBoxHeaderSize();
             writer.SkipBytes(remaining);
         }
     }

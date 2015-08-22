@@ -146,5 +146,16 @@ namespace Media.ISO
 
             return constructor.Invoke(args) as Box;
         }
+
+        /// <summary>
+        /// Serialize a box to a stream.
+        /// </summary>
+        /// <param name="box"></param>
+        /// <param name="stream"></param>
+        public static void Write(this Box box, Stream stream)
+        {
+            BoxWriter writer = new BoxWriter(stream);
+            box.Write(writer);
+        }
     }
 }
