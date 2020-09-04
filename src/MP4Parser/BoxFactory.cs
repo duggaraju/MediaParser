@@ -102,11 +102,10 @@ namespace Media.ISO
         /// <returns></returns>
         public static Box Parse(BoxReader reader, int depth = int.MaxValue)
         {
-            uint type;
             long size;
             Guid? extendedType;
             long boxOffset = reader.BaseStream.Position;
-            Box.ParseHeader(reader, out type, out size, out extendedType);
+            Box.ParseHeader(reader, out uint type, out size, out extendedType);
             Trace.TraceInformation("Found Box:{0} Size:{1} at Offset:{2:x}", type.GetBoxName(), size, boxOffset);
             var box = Create(type, extendedType);
             box.Size = size;
@@ -127,7 +126,7 @@ namespace Media.ISO
             Type declaringType = GetDeclaringType(type, extendedType);
 
             ConstructorInfo constructor;
-            Object[] args;
+            object[] args;
             if (declaringType == typeof(Box))
             {
                 var argTypes = new[] { typeof(uint), typeof(Guid?) };

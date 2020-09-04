@@ -107,7 +107,7 @@ namespace Media.ISO
         /// </summary>
         public void Write(Guid value)
         {
-            Byte[] guid = value.ToByteArray();
+            byte[] guid = value.ToByteArray();
             Debug.Assert(16 == guid.Length);
             WriteInt32(BitConverter.ToInt32(guid, 0));
             WriteInt16(BitConverter.ToInt16(guid, 4));

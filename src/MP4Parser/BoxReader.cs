@@ -66,10 +66,10 @@ namespace Media.ISO
         /// </summary>
         public Guid ReadGuid()
         {
-            Int32 data1 = ReadInt32();
-            Int16 data2 = ReadInt16();
-            Int16 data3 = ReadInt16();
-            Byte[] data4 = ReadBytes(8);
+            int data1 = ReadInt32();
+            short data2 = ReadInt16();
+            short data3 = ReadInt16();
+            byte[] data4 = ReadBytes(8);
             return new Guid(data1, data2, data3, data4);
         }
 
@@ -77,7 +77,7 @@ namespace Media.ISO
         /// This function reads an 1/2/3/4-byte big-endian field from disk.
         /// </summary>
         /// <param name="bytes">The size of the field in bytes.</param>
-        public UInt32 ReadVariableLengthField(int bytes)
+        public uint ReadVariableLengthField(int bytes)
         {
             uint value = 0;
 
