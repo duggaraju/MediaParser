@@ -47,14 +47,8 @@ namespace Media.ISO
         private const string UuidBox = "uuid";
         public static readonly uint UuidBoxType = UuidBox.GetBoxType();
 
-        public static IEnumerable<string> BoxNames
-        {
-            get
-            {
-                return typeof (BoxConstants).GetFields()
+        public static IEnumerable<string> BoxNames => typeof(BoxConstants).GetFields()
                     .Where(field => field.IsLiteral && field.IsPublic).
                     Select(field => field.GetValue(null) as string);
-            }
-        }
     }
 }

@@ -136,7 +136,7 @@ namespace Media.ISO
             else
             {
                 constructor = declaringType.GetConstructor(new Type[0]);
-                args = new object[0];
+                args = Array.Empty<object>();
             }
             if (constructor == null)
             {

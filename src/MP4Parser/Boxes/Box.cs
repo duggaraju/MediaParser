@@ -25,19 +25,19 @@ namespace Media.ISO.Boxes
 	/// </summary>
     public class Box
     {
-		/// <summary>
-		/// The type of the box.
-		/// </summary>
-        public uint Type { get; private set; }
+        /// <summary>
+        /// The type of the box.
+        /// </summary>
+        public uint Type { get; }
 
         /// <summary>
         /// The size of the box.
         /// </summary>
         public long Size { get; set; }
 
-        public List<Box> Children { get; private set; }
+        public List<Box> Children { get; }
 
-        public Guid? ExtendedType { get; private set; }
+        public Guid? ExtendedType { get; }
 
         public Stream BoxBody { get; set; }
 
@@ -55,7 +55,7 @@ namespace Media.ISO.Boxes
 
 		public override string ToString()
         {
-            return string.Format("Box:{0} Size:{1}", Name, Size);
+            return $"Box:{Name} Size:{Size} {ExtendedType}";
         }
 
 		internal void Parse(BoxReader reader, long boxOffset, int depth = int.MaxValue)
@@ -77,14 +77,14 @@ namespace Media.ISO.Boxes
 		    catch (Exception e)
 		    {
                 throw new ParseException(
-                    string.Format("Failed to parse box content for box:{0} at offset:{1}", Name, reader.BaseStream.Position), 
+                    $"Failed to parse box content for box:{Name} at offset:{reader.BaseStream.Position}", 
                     e);
 		    }
 
 		    if (reader.BaseStream.Position != boxEnd)
 		    {
 		        throw new ParseException(
-                    string.Format("Unparsed box content at the end of box: {0} Offset:{1}", this, reader.BaseStream.Position));
+                    $"Unparsed box content at the end of box: {this} Offset:{reader.BaseStream.Position}");
 		    }
         }
 
@@ -103,7 +103,7 @@ namespace Media.ISO.Boxes
 	        if (reader.BaseStream.Length - reader.BaseStream.Position < boxBody)
 	        {
 	            throw new ParseException(
-                    string.Format("The stream is smaller than the box size. Box:{0} Size:{1} stream Offset:{2} Length:{3}", Name, Size, reader.BaseStream.Position, reader.BaseStream.Length));
+                    $"The stream is smaller than the box size. Box:{Name} Size:{Size} stream Offset:{reader.BaseStream.Position} Length:{reader.BaseStream.Length}");
 	        }
 
 	        if (boxBody > 0 && reader.BaseStream.CanSeek)
@@ -163,40 +163,34 @@ namespace Media.ISO.Boxes
         /// <summary>
         /// Get the name of the box in a printer friendly string.
         /// </summary>
-        public string Name
-        {
-            get
-            {
-                return Type.GetBoxName();
-            }
-        }
+        public string Name => Type.GetBoxName();
 
 
         /// <summary>
         /// Compute the size of the box itself (without any children).
         /// </summary>
         /// <returns></returns>
-	    protected virtual long GetBoxHeaderSize()
-	    {
-	        long size = 8;
-            
-            if (Size > uint.MaxValue)
+	    protected virtual long HeaderSize
+        {
+            get
             {
-                size += 8;
+                long size = 8;
+
+                if (Size > uint.MaxValue)
+                {
+                    size += 8;
+                }
+
+                if (ExtendedType.HasValue)
+                {
+                    size += 16;
+                }
+
+                return size;
             }
-            
-            if (ExtendedType.HasValue)
-	        {
-	            size += 16;
-	        }
-
-            return size;
-	    }
-
-	    protected virtual long GetBoxContentSize()
-	    {
-            return BoxBody == null ? 0 : BoxBody.Length;
         }
+
+        protected virtual long BoxContentSize => BoxBody == null ? 0 : BoxBody.Length;
 
         /// <summary>
         /// Compute the size of the box and upadte the Size field.
@@ -204,23 +198,20 @@ namespace Media.ISO.Boxes
         /// <returns>The compute size</returns>
         public long ComputeSize()
         {
-            long size = GetBoxHeaderSize();
+            long size = HeaderSize;
             if (CanHaveChildren)
             {
                 size += Children.Sum(child => child.ComputeSize());
             }
             else
             {
-                size += GetBoxContentSize();
+                size += BoxContentSize;
             }
             Size = size;
             return size;
         }
 
-	    public virtual bool CanHaveChildren
-	    {
-            get {  return false; }
-	    }
+        public virtual bool CanHaveChildren => false;
 
         /// <summary>
         /// Write the content of the box to a writer.

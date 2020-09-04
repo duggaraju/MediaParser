@@ -28,10 +28,7 @@ namespace Media.ISO.Boxes
 
         public int MajorBrand { get; set; }
 
-        public string MajorBrandName
-        {
-            get { return MajorBrand.GetBoxName(); }
-        }
+        public string MajorBrandName => MajorBrand.GetBoxName();
 
         public int MinorVersion { get; set; }
 
@@ -47,10 +44,7 @@ namespace Media.ISO.Boxes
             }
         }
 
-        protected override long GetBoxContentSize()
-        {
-            return 8 + CompatibleBrands.Count*4;
-        }
+        protected override long BoxContentSize => 8 + CompatibleBrands.Count * 4;
 
         protected override void WriteBoxContent(BoxWriter writer)
         {

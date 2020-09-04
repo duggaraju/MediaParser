@@ -79,25 +79,13 @@ namespace Media.ISO
             throw new NotImplementedException();
         }
 
-        public override bool CanRead
-        {
-            get { return _stream.CanRead; }
-        }
+        public override bool CanRead => _stream.CanRead;
 
-        public override bool CanSeek
-        {
-            get { return _stream.CanSeek; }
-        }
+        public override bool CanSeek => _stream.CanSeek;
 
-        public override bool CanWrite
-        {
-            get { return _stream.CanWrite; }
-        }
+        public override bool CanWrite => _stream.CanWrite;
 
-        public override long Length
-        {
-            get { return _length; }
-        }
+        public override long Length => _length;
 
         public override long Position 
         {

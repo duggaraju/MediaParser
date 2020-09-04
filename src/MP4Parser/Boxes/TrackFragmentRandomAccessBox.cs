@@ -110,20 +110,11 @@ namespace Media.ISO.Boxes
             });
         }
 
-        public int SizeOfTrackFragmentNumber
-        {
-            get { return (_sizeOfEntry & 0x30) >> 4; }
-        }
+        public int SizeOfTrackFragmentNumber => (_sizeOfEntry & 0x30) >> 4;
 
-        public int SizeOfTrackRunNumber
-        {
-            get { return (_sizeOfEntry & 0xC0) >> 2; }
-        }
+        public int SizeOfTrackRunNumber => (_sizeOfEntry & 0xC0) >> 2;
 
-        public int SizeOfSampleNumber
-        {
-            get {  return _sizeOfEntry & 0x3; }
-        }
+        public int SizeOfSampleNumber => _sizeOfEntry & 0x3;
 
         private int _sizeOfEntry;
     }

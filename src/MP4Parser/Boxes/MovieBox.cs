@@ -24,14 +24,8 @@ namespace Media.ISO.Boxes
         {
         }
 
-        public override bool CanHaveChildren
-        {
-            get { return true; }
-        }
+        public override bool CanHaveChildren => true;
 
-        public IEnumerable<TrackBox> Tracks
-        {
-            get { return GetChildren<TrackBox>(); }
-        }
+        public IEnumerable<TrackBox> Tracks => GetChildren<TrackBox>();
     }
 }

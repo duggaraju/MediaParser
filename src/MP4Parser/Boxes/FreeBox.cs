@@ -29,11 +29,11 @@ namespace Media.ISO.Boxes
         {
         }
 
-        public override bool CanHaveChildren { get { return false; } }
+        public override bool CanHaveChildren => false;
 
         protected override void WriteBoxContent(BoxWriter writer)
         {
-            long remaining = Size - GetBoxHeaderSize();
+            long remaining = Size - HeaderSize;
             writer.SkipBytes(remaining);
         }
     }

@@ -24,12 +24,6 @@ namespace Media.ISO.Boxes
         {
         }
 
-        public IEnumerable<TrackFragmentBox> Tracks
-        {
-            get
-            {
-                return GetChildren<TrackFragmentBox>();
-            }
-        }
+        public IEnumerable<TrackFragmentBox> Tracks => GetChildren<TrackFragmentBox>();
     }
 }

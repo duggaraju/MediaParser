@@ -24,12 +24,6 @@ namespace Media.ISO.Boxes
         {
         }
 
-        public MovieFragmentRandomOffsetBox Offset
-        {
-            get
-            {
-                return GetChildren<MovieFragmentRandomOffsetBox>().Single();
-            }
-        }
+        public MovieFragmentRandomOffsetBox Offset => GetChildren<MovieFragmentRandomOffsetBox>().Single();
     }
 }

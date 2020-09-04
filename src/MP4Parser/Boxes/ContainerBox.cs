@@ -24,10 +24,7 @@ namespace Media.ISO.Boxes
         {
         }
 
-        public override sealed bool CanHaveChildren
-        {
-            get { return true; }
-        }
+        public override sealed bool CanHaveChildren => true;
 
         /// <summary>
         /// Container boxes do not any box specific content. so helper to accidentally overriding the same.

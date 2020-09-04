@@ -103,7 +103,7 @@ namespace Media.ISO
             }
             else
             {
-                byte[] buffer = new byte[Math.Min(16 * 1204, bytesToSkip)];
+                byte[] buffer = new byte[Math.Min(16 * 1024, bytesToSkip)];
                 while (bytesToSkip > 0)
                 {
                     int bytesRead = Read(buffer, 0, buffer.Length);

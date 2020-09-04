@@ -24,12 +24,6 @@ namespace Media.ISO.Boxes
         {
         }
 
-        public TrackHeaderBox Header
-        {
-            get
-            {
-                return GetChildren<TrackHeaderBox>().Single();
-            }
-        }
+        public TrackHeaderBox Header => GetChildren<TrackHeaderBox>().Single();
     }
 }
