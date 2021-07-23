@@ -61,7 +61,7 @@ namespace Media.ISO.Boxes
         /// <summary>
         /// Parse the box content.
         /// </summary>
-        protected override void ParseBoxContent(BoxReader reader, long boxEnd)
+        protected override void ParseContent(BoxReader reader, long boxEnd)
         {
             TrackId = reader.ReadUInt32();
             _sizeOfEntry = reader.ReadInt32();

@@ -69,16 +69,14 @@ namespace Media.ISO.MP4Parser.Tests
             using (var stream = new FileStream(fileName, FileMode.Open))
             {
                 var boxes = BoxFactory.Parse(stream).ToList();
-                using (var filestream = new FileStream(outputFile, FileMode.OpenOrCreate))
+                using var filestream = new FileStream(outputFile, FileMode.OpenOrCreate);
+                var writer = new BoxWriter(filestream);
+                foreach (var box in boxes)
                 {
-                    var writer = new BoxWriter(filestream);
-                    foreach(var box in boxes)
-                    {
-                        DisplayBox(box, 0);
-                        box.Write(writer);
-                    }
-                    writer.Close();
+                    DisplayBox(box, 0);
+                    box.Write(writer);
                 }
+                writer.Close();
             }
             var newFile = new FileInfo(outputFile);
             Trace.TraceInformation("Original File: {0} - {1}\n New File:{2} {3}",

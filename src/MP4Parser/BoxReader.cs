@@ -15,6 +15,7 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Text;
 
 namespace Media.ISO
 {
@@ -114,6 +115,17 @@ namespace Media.ISO
                     bytesToSkip -= bytesRead;
                 }
             }
+        }
+
+        public override string ReadString()
+        {
+            var builder = new StringBuilder();
+            int c;
+            while ((c = Read()) != 0 && c != -1)
+            {
+                builder.Append((char)c);
+            }
+            return builder.ToString();
         }
     }
 }

@@ -18,14 +18,9 @@ namespace Media.ISO.Boxes
     /// A class to implement the 'free' box to pad space.
     /// </summary>
     [BoxType(BoxConstants.FreeBox)]
-    [BoxType(BoxConstants.SkipBox)]
     public class FreeBox : Box
     {
-        public FreeBox() : this(false)
-        {
-        }
-
-        public FreeBox(bool useSkip) : base(useSkip ? BoxConstants.SkipBox : BoxConstants.FreeBox)
+        public FreeBox() : base(BoxConstants.FreeBox)
         {
         }
 
@@ -33,8 +28,21 @@ namespace Media.ISO.Boxes
 
         protected override void WriteBoxContent(BoxWriter writer)
         {
-            long remaining = Size - HeaderSize;
-            writer.SkipBytes(remaining);
+            writer.SkipBytes(Size - HeaderSize);
+        }
+    }
+
+    [BoxType(BoxConstants.SkipBox)]
+    public class SkipBox : Box
+    {
+        public SkipBox() : base(BoxConstants.SkipBox)
+        {}
+
+        public override bool CanHaveChildren => false;
+
+        protected override void WriteBoxContent(BoxWriter writer)
+        {
+            writer.SkipBytes(Size - HeaderSize);
         }
     }
 }

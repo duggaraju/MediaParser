@@ -1,16 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31410.357
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MP4Parser", "src\MP4Parser\MP4Parser.csproj", "{14AF6F06-A0F9-4612-8963-B482866BB118}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MP4Parser", "src\MP4Parser\MP4Parser.csproj", "{14AF6F06-A0F9-4612-8963-B482866BB118}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MP4Parser.Tests", "src\MP4Parser.Tests\MP4Parser.Tests.csproj", "{E41DF877-6452-47D0-8A43-4D2ADE899738}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MP4Parser.Tests", "src\MP4Parser.Tests\MP4Parser.Tests.csproj", "{E41DF877-6452-47D0-8A43-4D2ADE899738}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{FE2063B4-4C73-4F30-AAC4-B031429C3076}"
 	ProjectSection(SolutionItems) = preProject
 		Local.testsettings = Local.testsettings
 	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BoxDump", "tools\BoxDump\BoxDump.csproj", "{35209ED1-AD64-4F29-BFBB-F36676A16848}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,11 +28,15 @@ Global
 		{E41DF877-6452-47D0-8A43-4D2ADE899738}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E41DF877-6452-47D0-8A43-4D2ADE899738}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E41DF877-6452-47D0-8A43-4D2ADE899738}.Release|Any CPU.Build.0 = Release|Any CPU
+		{35209ED1-AD64-4F29-BFBB-F36676A16848}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{35209ED1-AD64-4F29-BFBB-F36676A16848}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{35209ED1-AD64-4F29-BFBB-F36676A16848}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{35209ED1-AD64-4F29-BFBB-F36676A16848}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		EnterpriseLibraryConfigurationToolBinariesPathV6 = packages\EnterpriseLibrary.TransientFaultHandling.6.0.1304.0\lib\portable-net45+win+wp8;packages\EnterpriseLibrary.TransientFaultHandling.Data.6.0.1304.1\lib\NET45
+		SolutionGuid = {A6032773-5FA0-4233-AC43-23C582603CE6}
 	EndGlobalSection
 EndGlobal

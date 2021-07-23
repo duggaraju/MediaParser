@@ -1,16 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
-    <OutputType>Library</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>Media.ISO.MP4Parser.Tests</RootNamespace>
     <AssemblyName>MP4Parser.Tests</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
-    <PackageReference Include="MSTest.TestAdapter" Version="2.1.2" />
-    <PackageReference Include="MSTest.TestFramework" Version="2.1.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.10.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="2.2.5" />
+    <PackageReference Include="MSTest.TestFramework" Version="2.2.5" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\MP4Parser\MP4Parser.csproj" />
+    <ProjectReference Include="../MP4Parser/MP4Parser.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../test/content/*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

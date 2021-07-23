@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -35,18 +36,18 @@ namespace Media.ISO
             var assembly = Assembly.GetExecutingAssembly();
             foreach (var type in assembly.GetTypes())
             {
-                var attributes = type.GetCustomAttributes(typeof(BoxTypeAttribute)).Cast<BoxTypeAttribute>();
-                foreach (var attribute in attributes)
+                var attribute = type.GetCustomAttribute<BoxTypeAttribute>();
+                if (attribute != null)
                 {
                     var boxType = attribute.Type.GetBoxType();
                     Trace.TraceInformation("Declared box {0}/{1:x} Type:{2}", attribute.Type, boxType, type);
-                    if (attribute.Type != "uuid")
+                    if (attribute.ExtendedType == null)
                     {
                         Boxes.Add(attribute.Type.GetBoxType(), type);
                     }
                     else
                     {
-                        UuidBoxes.Add(attribute.ExtendedType, type);
+                        UuidBoxes.Add(attribute.ExtendedType.Value, type);
                     }
                 }
             }
@@ -62,7 +63,7 @@ namespace Media.ISO
             {
                 if (extendedType == null)
                 {
-                    throw new ArgumentException("Extended type cannot be null for uuid box", "extendedType");
+                    throw new ArgumentException("Extended type cannot be null for uuid box", nameof(extendedType));
                 }
                 UuidBoxes.TryGetValue(extendedType.Value, out declaringType);
             }
@@ -92,6 +93,29 @@ namespace Media.ISO
             {
                 yield return Parse(reader);
             }
+        }
+
+        public static (uint Type, uint Size) LookupBox(ReadOnlySpan<byte> buffer)
+        {
+            var type = BinaryPrimitives.ReadUInt32BigEndian(buffer);
+            buffer = buffer.Slice(4);
+            var size = BinaryPrimitives.ReadUInt32BigEndian(buffer);
+            return (type, size);
+        }
+
+        public static Box Parse(ReadOnlySpan<byte> buffer)
+        {
+            Guid? extendedType = null;
+            var (type, size) = LookupBox(buffer);
+            buffer = buffer.Slice(8);
+            if (type == BoxConstants.UuidBoxType)
+            {
+                extendedType = new Guid(buffer);
+                buffer = buffer.Slice(16);
+            }
+            var box = Create(type, extendedType);
+            box.Size = size;
+            return box;
         }
 
         /// <summary>

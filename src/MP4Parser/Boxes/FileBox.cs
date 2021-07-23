@@ -34,7 +34,7 @@ namespace Media.ISO.Boxes
 
         public List<int> CompatibleBrands { get; private set; }
 
-        protected override void ParseBoxContent(BoxReader reader, long boxEnd)
+        protected override void ParseContent(BoxReader reader, long boxEnd)
         {
             MajorBrand = reader.ReadInt32();
             MinorVersion = reader.ReadInt32();

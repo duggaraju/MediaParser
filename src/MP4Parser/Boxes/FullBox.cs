@@ -37,7 +37,7 @@ namespace Media.ISO.Boxes
 
         protected override long HeaderSize => base.HeaderSize + 4;
 
-        protected override sealed void ParseBoxHeader(BoxReader reader)
+        protected override sealed void ParseHeader(BoxReader reader)
         {
             _versionAndFlags = reader.ReadUInt32();
         }

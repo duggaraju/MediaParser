@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Media.ISO.Boxes;
@@ -55,21 +54,19 @@ namespace Media.ISO.MP4Parser.Tests
 
             if (bodyLength > 0)
             {
-                Assert.IsNotNull(box.BoxBody);
-                Assert.AreEqual(bodyLength, box.BoxBody.Length);
+                Assert.IsNotNull(box.Body);
+                Assert.AreEqual(bodyLength, box.Body.Length);
             }
             else
             {
-                Assert.IsNull(box.BoxBody);
+                Assert.AreEqual(0, box.Body.Length);
             }
 
-            using (var output = new MemoryStream(bytes.Length))
-            {
-                box.Write(output);
-                var outputBytes = output.ToArray();
-                if (roundTrip)
-                    CollectionAssert.AreEqual(bytes, outputBytes);
-            }            
+            using var output = new MemoryStream(bytes.Length);
+            box.Write(output);
+            var outputBytes = output.ToArray();
+            if (roundTrip)
+                CollectionAssert.AreEqual(bytes, outputBytes);
         }
 
         [TestMethod]

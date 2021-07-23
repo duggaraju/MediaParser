@@ -29,7 +29,7 @@ namespace Media.ISO.Boxes
         /// <summary>
         /// Container boxes do not any box specific content. so helper to accidentally overriding the same.
         /// </summary>
-        protected override sealed void ParseBoxContent(BoxReader reader, long boxEnd)
+        protected override sealed void ParseContent(BoxReader reader, long boxEnd)
         {
             Debug.Assert(false);
         }

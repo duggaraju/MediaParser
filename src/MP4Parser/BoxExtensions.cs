@@ -12,8 +12,10 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using Media.ISO.Boxes;
 using System;
-using System.Net;
+using System.Buffers.Binary;
+using System.Reflection;
 using System.Text;
 
 namespace Media.ISO
@@ -37,8 +39,9 @@ namespace Media.ISO
                 throw new ArgumentException("Box name must be only 4 characters", paramName: "boxName");
             }
 
-            var bytes = Encoding.UTF8.GetBytes(boxName);
-            return (uint) IPAddress.NetworkToHostOrder(BitConverter.ToInt32(bytes, 0));
+            Span<byte> bytes = stackalloc byte[4];
+            Encoding.ASCII.GetBytes(boxName, bytes);
+            return BinaryPrimitives.ReadUInt32BigEndian(bytes);
         }
 
         /// <summary>
@@ -51,8 +54,14 @@ namespace Media.ISO
 
         public static string GetBoxName(this int type)
         {
-            var bytes = (BitConverter.GetBytes(IPAddress.NetworkToHostOrder(type)));
-            return Encoding.UTF8.GetString(bytes, 0, bytes.Length);            
+            Span<byte> buffer = stackalloc byte[4];
+            BinaryPrimitives.WriteInt32BigEndian(buffer, type);
+            return Encoding.ASCII.GetString(buffer);            
+        }
+
+        public static uint GetBoxType<T>() where T : Box
+        {
+            return typeof(T).GetCustomAttribute<BoxTypeAttribute>().Type.GetBoxType();
         }
     }
 }

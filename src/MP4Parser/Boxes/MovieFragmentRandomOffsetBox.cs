@@ -27,7 +27,7 @@ namespace Media.ISO.Boxes
         /// </summary>
         public uint BoxSize { get; set; }
 
-        protected override void ParseBoxContent(BoxReader reader, long boxEnd)
+        protected override void ParseContent(BoxReader reader, long boxEnd)
         {
             BoxSize = reader.ReadUInt32();
         }

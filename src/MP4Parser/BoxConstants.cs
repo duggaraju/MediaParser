@@ -34,6 +34,9 @@ namespace Media.ISO
         public const string FreeBox = "free";
         public const string SkipBox = "skip";
 
+        //CMAF boxes.
+        public const string EmsgBox = "emsg";
+        public const string TfdtBox = "tfdt";
 
         // Fragmented MP4 file boxes.
         public const string MovieFragmentBox = "moof";
