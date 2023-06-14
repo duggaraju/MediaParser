@@ -62,9 +62,12 @@ namespace Media.ISO
             {
                 if (extendedType == null)
                 {
-                    throw new ArgumentException("Extended type cannot be null for uuid box", nameof(extendedType));
+                    declaringType = typeof(Box);
                 }
-                UuidBoxes.TryGetValue(extendedType.Value, out declaringType);
+                else
+                {
+                    UuidBoxes.TryGetValue(extendedType.Value, out declaringType);
+                }
             }
             else
             {
@@ -94,24 +97,27 @@ namespace Media.ISO
             }
         }
 
-        public static (uint Type, uint Size) LookupBox(ReadOnlySpan<byte> buffer)
+        public static BoxHeader LookupBox(ReadOnlySpan<byte> buffer)
         {
-            var type = BinaryPrimitives.ReadUInt32BigEndian(buffer);
+            long size = BinaryPrimitives.ReadUInt32BigEndian(buffer);
             buffer = buffer.Slice(4);
-            var size = BinaryPrimitives.ReadUInt32BigEndian(buffer);
-            return (type, size);
+            var type = BinaryPrimitives.ReadUInt32BigEndian(buffer);
+            Guid? extendedType = null;
+            if (size == 0 && buffer.Length >= 8)
+            {
+                size = BinaryPrimitives.ReadInt64BigEndian(buffer);
+                buffer = buffer.Slice(8);
+            }
+            if (type == BoxConstants.UuidBoxType && buffer.Length >= 16)
+            {
+                extendedType = new Guid(buffer);
+            }
+            return new BoxHeader(size, type, extendedType);
         }
 
         public static Box Parse(ReadOnlySpan<byte> buffer)
         {
-            Guid? extendedType = null;
-            var (type, size) = LookupBox(buffer);
-            buffer = buffer.Slice(8);
-            if (type == BoxConstants.UuidBoxType)
-            {
-                extendedType = new Guid(buffer);
-                buffer = buffer.Slice(16);
-            }
+            var (size, type, extendedType) = LookupBox(buffer);
             var box = Create(type, extendedType);
             box.Size = size;
             return box;
@@ -145,26 +151,30 @@ namespace Media.ISO
         public static Box Create(uint type, Guid? extendedType = null)
         {
             Type declaringType = GetDeclaringType(type, extendedType);
+            var boxName = type.GetBoxName();
+            try
+            {
+                ConstructorInfo constructor;
+                object[] args;
+                if (declaringType == typeof(Box))
+                {
+                    var argTypes = new[] { typeof(uint), typeof(Guid?) };
+                    constructor = declaringType.GetConstructor(argTypes);
+                    args = new object[] { type, extendedType };
+                }
+                else
+                {
+                    constructor = declaringType.GetConstructor(new Type[0]);
+                    args = Array.Empty<object>();
+                }
+                return (Box)constructor.Invoke(args);
+            }
+            catch (Exception ex)
+            {
+                throw new ParseException("Did not find matching constructor in box.", ex);
 
-            ConstructorInfo constructor;
-            object[] args;
-            if (declaringType == typeof(Box))
-            {
-                var argTypes = new[] { typeof(uint), typeof(Guid?) };
-                constructor = declaringType.GetConstructor(argTypes);
-                args = new object[] { type, extendedType };
-            }
-            else
-            {
-                constructor = declaringType.GetConstructor(new Type[0]);
-                args = Array.Empty<object>();
-            }
-            if (constructor == null)
-            {
-                throw new ParseException("Did not find matching constructor in box.");
             }
 
-            return (Box) constructor.Invoke(args);
         }
 
         /// <summary>

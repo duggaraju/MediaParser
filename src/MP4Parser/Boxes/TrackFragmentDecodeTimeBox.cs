@@ -7,7 +7,7 @@ namespace Media.ISO.Boxes
     {
         public ulong BaseMediaDecodeTime { get; set; }   
 
-        public TrackFragmentDecodeTimeBox(uint type) : base(type)
+        public TrackFragmentDecodeTimeBox() : base(BoxConstants.TfdtBox)
         {
         }
 

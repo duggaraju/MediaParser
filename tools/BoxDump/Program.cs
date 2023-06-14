@@ -18,33 +18,79 @@ namespace CommandLine
                 DumpBox(child, indent + 1);
         }
 
+        static void Skip(Stream stream, int bytes)
+        {
+            if (stream.CanSeek)
+            {
+                stream.Position += bytes;
+            }
+            else
+            {
+                Span<byte> span = stackalloc byte[Math.Min(bytes, 16 * 1024)];
+                while (bytes != 0)
+                {
+                    bytes -= stream.Read(span);
+                }
+            }
+        }
+
         static async Task Main(string[] args)
         {
             var rootCommand = new RootCommand
             {
                 new Option<string>(
-                    "--input-file",
-                    "file to open")
+                    aliases: new[] { "-i", "--input-file" },
+                    description: "file to open")
                 {
                     IsRequired = true
-                }
+                },
+                new Option<bool>(
+                    aliases: new[] { "-t", "--top-level"},
+                    getDefaultValue: () => false,
+                    description: "only print top level boxes")
             };
 
             rootCommand.Description = "MP4 Box dump";
 
             // Note that the parameters of the handler method are matched according to the names of the options
-            rootCommand.Handler = CommandHandler.Create<string>(inputFile =>
+            rootCommand.Handler = CommandHandler.Create<string, bool>((inputFile, top) =>
             {
                 var indent = 0;
                 using var stream = File.OpenRead(inputFile);
-                foreach (var box in BoxFactory.Parse(stream))
+                if (top)
                 {
-                    DumpBox(box, indent);
+                    PrintTopLevelBoxes(stream);
+                }
+                else
+                {
+                    PrintBoxTree(indent, stream);
                 }
             });
 
             // Parse the incoming args and invoke the handler
             await rootCommand.InvokeAsync(args);
+        }
+
+        private static void PrintBoxTree(int indent, FileStream stream)
+        {
+            foreach (var box in BoxFactory.Parse(stream))
+            {
+                DumpBox(box, indent);
+            }
+        }
+
+        private static void PrintTopLevelBoxes(FileStream stream)
+        {
+            Span<byte> boxHeader = stackalloc byte[8];
+            while (true)
+            {
+                var bytes = stream.Read(boxHeader);
+                if (bytes == 0)
+                    break;
+                var box = BoxFactory.Parse(boxHeader);
+                DumpBox(box);
+                Skip(stream, (int)box.Size - 8);
+            }
         }
     }
 }

@@ -12,6 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using System.Diagnostics;
 
 namespace Media.ISO.Boxes
@@ -19,6 +20,11 @@ namespace Media.ISO.Boxes
     // A genric container box that only has child boxes and no box specific content.
     public abstract class ContainerBox : Box
     {
+
+        protected ContainerBox(uint boxType) : base(boxType)
+        {
+        }
+
         protected ContainerBox(string boxName)
             : base(boxName)
         {
