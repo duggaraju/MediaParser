@@ -5,17 +5,19 @@
     <RootNamespace>Media.ISO</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Title>ISO Base Media File Parser</Title>
-    <Company>Prakash Duggaraju</Company>
+    <Company>Duggaraju LLC</Company>
+    <Authors>Prakash Duggaraju</Authors>
     <PackageProjectUrl>https://github.com/duggaraju/MP4Parser</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 	<RepositoryUrl>https://github.com/duggaraju/MP4Parser</RepositoryUrl>
     <Nullable>warnings</Nullable>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <AssemblyName>Media.ISO.BMFFParser</AssemblyName>
     <LangVersion>latest</LangVersion>
     <PackageId>Duggaraju.Media</PackageId>
     <PackageTags>Media;Parser;ISO;BMFF;MP4</PackageTags>
+    <Description>An ISO Base Media File Parser.</Description>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="..\..\LICENSE.txt" Link="LICENSE.txt" Package="true" PackagePath="/" />
