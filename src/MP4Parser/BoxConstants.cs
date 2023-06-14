@@ -37,6 +37,8 @@ namespace Media.ISO
         //CMAF boxes.
         public const string EmsgBox = "emsg";
         public const string TfdtBox = "tfdt";
+        public const string PrftBox = "Prft";
+        public const string SidxBox = "sidx";
 
         // Fragmented MP4 file boxes.
         public const string MovieFragmentBox = "moof";
@@ -46,7 +48,6 @@ namespace Media.ISO
         public const string MovieFragmentRandomAccessBox = "mfra";
         public const string TrackFragmentRandomAccessBox = "tfra";
         public const string MovieFragmentRandomOffsetBox = "mfro";
-
         private const string UuidBox = "uuid";
         public static readonly uint UuidBoxType = UuidBox.GetBoxType();
 

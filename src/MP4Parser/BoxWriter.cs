@@ -13,40 +13,52 @@
 //limitations under the License.
 
 using System;
-using System.Diagnostics;
+using System.Buffers.Binary;
 using System.IO;
-using System.Net;
 
 namespace Media.ISO
 {
     /// <summary>
     /// Implements a writer class that writes data in big endian format to stream.
     /// </summary>
-    public class BoxWriter : BinaryWriter
+    public class BoxWriter
     {
+        public readonly Stream BaseStream;
+
         /// <summary>
         /// Construct a writer that writes to the given stream.
         /// </summary>
-        public BoxWriter(Stream stream) :
-            base(stream)
+        public BoxWriter(Stream stream)
         {
+            BaseStream = stream;
         }
 
         #region signed writes
 
+        public void Write(Span<byte> data)
+        {
+            BaseStream.Write(data);
+        }
+
         public void WriteInt16(short value)
         {
-            base.Write(IPAddress.HostToNetworkOrder(value));
+            Span<byte> buffer = stackalloc byte[2];
+            BinaryPrimitives.WriteInt16BigEndian(buffer, value);
+            Write(buffer);
         }
 
         public void WriteInt32(int value)
         {
-            base.Write(IPAddress.HostToNetworkOrder(value));
+            Span<byte> buffer = stackalloc byte[4];
+            BinaryPrimitives.WriteInt32BigEndian(buffer, value);
+            Write(buffer);
         }
 
         public void WriteInt64(long value)
         {
-            base.Write(IPAddress.HostToNetworkOrder(value));
+            Span<byte> buffer = stackalloc byte[8];
+            BinaryPrimitives.WriteInt64BigEndian(buffer, value);
+            Write(buffer);
         }
 
         #endregion
@@ -98,7 +110,7 @@ namespace Media.ISO
             for (int i = bytes - 1 ; i >= 0; --i)
             {
                 byte output = (byte)(value >> (i * 8));
-                Write(output);
+                BaseStream.WriteByte(output);
             }
         }
 
@@ -107,15 +119,15 @@ namespace Media.ISO
         /// </summary>
         public void Write(Guid value)
         {
-            byte[] guid = value.ToByteArray();
-            Debug.Assert(16 == guid.Length);
-            WriteInt32(BitConverter.ToInt32(guid, 0));
-            WriteInt16(BitConverter.ToInt16(guid, 4));
-            WriteInt16(BitConverter.ToInt16(guid, 6));
-            Write(guid, 8, 8);
+            Span<byte> buffer = stackalloc byte[16];
+            if (value.TryWriteBytes(buffer))
+            {
+                buffer.Reverse();
+            }
+            Write(buffer);
         }
 
-        public void SkipBytes(long bytes)
+        public void SkipBytes(int bytes)
         {
             if (BaseStream.CanSeek)
             {
@@ -124,12 +136,14 @@ namespace Media.ISO
             else
             {
                 // Fill with 0s.
-                byte[] buffer = new byte[Math.Min(bytes, 16*1024)];
-                Array.Clear(buffer, 0, buffer.Length);
+                Span<byte> buffer = stackalloc byte[Math.Min(bytes, 16*1024)];
                 while (bytes > 0)
                 {
-                    int bytesToWrite = (int)Math.Min(bytes, buffer.Length);
-                    Write(buffer, 0, bytesToWrite);
+                    if (bytes < buffer.Length)
+                    {
+                        buffer = buffer.Slice(0, bytes);
+                    }
+                    Write(buffer);
                     bytes -= buffer.Length;
                 }
             }

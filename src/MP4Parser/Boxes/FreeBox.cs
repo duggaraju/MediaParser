@@ -28,7 +28,7 @@ namespace Media.ISO.Boxes
 
         protected override void WriteBoxContent(BoxWriter writer)
         {
-            writer.SkipBytes(Size - HeaderSize);
+            writer.SkipBytes((int)(Size - HeaderSize));
         }
     }
 
@@ -42,7 +42,7 @@ namespace Media.ISO.Boxes
 
         protected override void WriteBoxContent(BoxWriter writer)
         {
-            writer.SkipBytes(Size - HeaderSize);
+            writer.SkipBytes((int)(Size - HeaderSize));
         }
     }
 }

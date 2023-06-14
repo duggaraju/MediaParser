@@ -13,8 +13,8 @@
 //limitations under the License.
 
 using System;
+using System.Buffers.Binary;
 using System.IO;
-using System.Net;
 using System.Text;
 
 namespace Media.ISO
@@ -22,42 +22,59 @@ namespace Media.ISO
     /// <summary>
     /// A utility class the extends BinaryReader and reads values in big endian format from a stream.
     /// </summary>
-    public class BoxReader : BinaryReader
+    public class BoxReader
     {
+        public  readonly Stream BaseStream;
         /// <summary>
         /// Construct with a given stream.
         /// </summary>
-        public BoxReader(Stream stream) :
-            base(stream)
+        public BoxReader(Stream stream)
         {
+            BaseStream = stream;
         }
 
-        public override short ReadInt16()
+        private int Read(Span<byte> buffer)
         {
-            return IPAddress.NetworkToHostOrder(base.ReadInt16());
+            var bytes = BaseStream.Read(buffer);
+            if (bytes == 0)
+            {
+                throw new EndOfStreamException();
+            }
+            return bytes;
         }
 
-        public override int ReadInt32()
+        public short ReadInt16()
         {
-            return IPAddress.NetworkToHostOrder(base.ReadInt32());
+            Span<byte> shortValue = stackalloc byte[2];
+            Read(shortValue);
+            return BinaryPrimitives.ReadInt16BigEndian(shortValue);
         }
 
-        public override long ReadInt64()
+        public int ReadInt32()
         {
-            return IPAddress.NetworkToHostOrder(base.ReadInt64());
+            Span<byte> intValue = stackalloc byte[4];
+            intValue = intValue.Slice(0, Read(intValue));
+            return BinaryPrimitives.ReadInt32BigEndian(intValue);
         }
 
-        public override ushort ReadUInt16()
+        public long ReadInt64()
         {
-            return (ushort)ReadInt16();
+            Span<byte> longValue = stackalloc byte[8];
+            Read(longValue);
+            return BinaryPrimitives.ReadInt64BigEndian(longValue);
         }
 
-        public override uint ReadUInt32()
+        public ushort ReadUInt16()
+        {
+            return (ushort) ReadInt16();
+        }
+
+        public uint ReadUInt32()
         {
             return (uint) ReadInt32();
         }
 
-        public override ulong ReadUInt64()
+        public ulong ReadUInt64()
         {
             return (ulong) ReadInt64();
         }
@@ -67,11 +84,10 @@ namespace Media.ISO
         /// </summary>
         public Guid ReadGuid()
         {
-            int data1 = ReadInt32();
-            short data2 = ReadInt16();
-            short data3 = ReadInt16();
-            byte[] data4 = ReadBytes(8);
-            return new Guid(data1, data2, data3, data4);
+            Span<byte> array = stackalloc byte[16];
+            Read(array);
+            array.Reverse();
+            return new Guid(array);
         }
 
         /// <summary>
@@ -90,13 +106,13 @@ namespace Media.ISO
             for (int i = 0; i < bytes; i ++)
             {
                 value <<= 8;
-                value |= ReadByte();
+                value |= (byte) BaseStream.ReadByte();
             }
 
             return value;
         }
 
-        public void SkipBytes(long bytesToSkip)
+        public void SkipBytes(int bytesToSkip)
         {
             if (BaseStream.CanSeek)
             {
@@ -104,24 +120,20 @@ namespace Media.ISO
             }
             else
             {
-                byte[] buffer = new byte[Math.Min(16 * 1024, bytesToSkip)];
+                Span<byte> buffer = stackalloc byte[Math.Min(8 * 1024, bytesToSkip)];
                 while (bytesToSkip > 0)
                 {
-                    int bytesRead = Read(buffer, 0, buffer.Length);
-                    if (bytesRead == 0)
-                    {
-                        throw new EndOfStreamException("Reached end of stream.");
-                    }
+                    int bytesRead = Read(buffer);
                     bytesToSkip -= bytesRead;
                 }
             }
         }
 
-        public override string ReadString()
+        public string ReadString()
         {
             var builder = new StringBuilder();
             int c;
-            while ((c = Read()) != 0 && c != -1)
+            while ((c = BaseStream.ReadByte()) != 0 && c != -1)
             {
                 builder.Append((char)c);
             }

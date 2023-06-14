@@ -16,11 +16,12 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 
 namespace Media.ISO.Boxes
 {
+    public record struct BoxHeader(long Size, uint Type, Guid? ExtendedType);
+
 	/// <summary>
 	/// Common base class for all MP4 boxes.
 	/// </summary>
@@ -40,7 +41,7 @@ namespace Media.ISO.Boxes
 
         public Guid? ExtendedType { get; set; }
 
-        public Memory<byte> Body { get; set; }
+        public Memory<byte> Body { get; set; } = Array.Empty<byte>();
 
 		public Box(uint type, Guid? extendedType = null)
         {
@@ -106,9 +107,11 @@ namespace Media.ISO.Boxes
 	            throw new ParseException(
                     $"The stream is smaller than the box size. Box:{Name} Size:{Size} stream Offset:{reader.BaseStream.Position} Length:{reader.BaseStream.Length}");
 	        }
-
-            Body = new byte[boxBody];
-            reader.BaseStream.Read(Body.Span);
+            if (boxBody > 0)
+            {
+                Body = new byte[boxBody];
+                reader.BaseStream.Read(Body.Span);
+            }
         }
 
         protected void ParseChildren(BoxReader reader, long boxEnd, int depth = int.MaxValue)
@@ -120,15 +123,14 @@ namespace Media.ISO.Boxes
 	        }
 	    }
 
-        public static long ParseHeader(BoxReader reader, out uint type, out long size, out Guid? extendedType)
+        public static BoxHeader ParseBoxHeader(BoxReader reader)
         {
-            long offset = reader.BaseStream.Position;
-            extendedType = null;
-
             try
             {
-                size = reader.ReadUInt32();
-                type = reader.ReadUInt32();
+                long size = reader.ReadUInt32();
+                var type = reader.ReadUInt32();
+                Guid? extendedType = null;
+
                 if (size == 0)
                 {
                     //box is till the end of the stream.
@@ -143,13 +145,12 @@ namespace Media.ISO.Boxes
                 {
                     extendedType = reader.ReadGuid();
                 }
+                return new BoxHeader(size, type, extendedType);
             }
             catch (Exception e)
             {
                 throw new ParseException("Failed to parse box details!", e);
             }
-
-            return reader.BaseStream.Position - offset;
         }
 
         /// <summary>

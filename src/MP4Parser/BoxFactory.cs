@@ -17,7 +17,6 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using Media.ISO.Boxes;
 
@@ -126,18 +125,16 @@ namespace Media.ISO
         /// <returns></returns>
         public static Box Parse(BoxReader reader, int depth = int.MaxValue)
         {
-            long size;
-            Guid? extendedType;
-            long boxOffset = reader.BaseStream.Position;
-            Box.ParseHeader(reader, out uint type, out size, out extendedType);
-            Trace.TraceInformation("Found Box:{0} Size:{1} at Offset:{2:x}", type.GetBoxName(), size, boxOffset);
+            long offset = reader.BaseStream.Position;
+            var (size, type, extendedType) = Box.ParseBoxHeader(reader);
+            Trace.TraceInformation("Found Box:{0} Size:{1} at Offset:{2:x}", type.GetBoxName(), size, offset);
             var box = Create(type, extendedType);
             box.Size = size;
-            box.Parse(reader, boxOffset, depth);
+            box.Parse(reader, offset, depth);
             return box;
         }
 
-        public static Box Create(string boxName, Guid? extendedType)
+        public static Box Create(string boxName, Guid? extendedType = null)
         {
             return Create(boxName.GetBoxType(), extendedType);
         }
@@ -145,7 +142,7 @@ namespace Media.ISO
         /// <summary>
         /// Create an instance of the box for the given box type.
         /// </summary>
-        public static Box Create(uint type, Guid? extendedType)
+        public static Box Create(uint type, Guid? extendedType = null)
         {
             Type declaringType = GetDeclaringType(type, extendedType);
 
@@ -167,7 +164,7 @@ namespace Media.ISO
                 throw new ParseException("Did not find matching constructor in box.");
             }
 
-            return constructor.Invoke(args) as Box;
+            return (Box) constructor.Invoke(args);
         }
 
         /// <summary>

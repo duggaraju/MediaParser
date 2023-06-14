@@ -14,7 +14,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Media.ISO.Boxes;
@@ -22,7 +21,6 @@ using Media.ISO.Boxes;
 namespace Media.ISO.MP4Parser.Tests
 {
     [TestClass]
-    [DeploymentItem("test/content")]
     public class BoxFactoryTest
     {
         private const string TestContent =
@@ -66,17 +64,16 @@ namespace Media.ISO.MP4Parser.Tests
         {
             var outputFile = Path.GetTempFileName();
             var originalFile = new FileInfo(fileName);
-            using (var stream = new FileStream(fileName, FileMode.Open))
             {
-                var boxes = BoxFactory.Parse(stream).ToList();
+                using var stream = new FileStream(fileName, FileMode.Open);
                 using var filestream = new FileStream(outputFile, FileMode.OpenOrCreate);
+                var boxes = BoxFactory.Parse(stream);
                 var writer = new BoxWriter(filestream);
                 foreach (var box in boxes)
                 {
                     DisplayBox(box, 0);
                     box.Write(writer);
                 }
-                writer.Close();
             }
             var newFile = new FileInfo(outputFile);
             Trace.TraceInformation("Original File: {0} - {1}\n New File:{2} {3}",
