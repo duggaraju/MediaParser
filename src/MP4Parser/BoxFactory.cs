@@ -60,13 +60,9 @@ namespace Media.ISO
             Type declaringType;
             if (type == BoxConstants.UuidBoxType)
             {
-                if (extendedType == null)
+                if (extendedType == null || !UuidBoxes.TryGetValue(extendedType.Value, out declaringType))
                 {
                     declaringType = typeof(Box);
-                }
-                else
-                {
-                    UuidBoxes.TryGetValue(extendedType.Value, out declaringType);
                 }
             }
             else
@@ -80,6 +76,26 @@ namespace Media.ISO
                 Trace.TraceWarning("No declared type for box {0}/{1:x}. Using generic Box class", type.GetBoxName(), type);
             }
 
+            return declaringType;
+        }
+
+        public static Type GetDeclaringType(string boxName)
+        {
+            Type declaringType = null;
+            if (Guid.TryParse(boxName, out var guid))
+            {
+                UuidBoxes.TryGetValue(guid, out declaringType);
+            }
+            else
+            {
+                Boxes.TryGetValue(boxName.GetBoxType(), out declaringType);
+            }
+            
+            if (declaringType == null)
+            {
+                declaringType = typeof(Box);
+                Trace.TraceWarning("No declared type for box {0}. Using generic Box class", boxName);
+            }
             return declaringType;
         }
 

@@ -17,6 +17,7 @@ using System.IO;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Media.ISO.Boxes;
+using System.Reflection;
 
 namespace Media.ISO.MP4Parser.Tests
 {
@@ -42,6 +43,21 @@ namespace Media.ISO.MP4Parser.Tests
                 var type = BoxFactory.GetDeclaringType(boxType);
                 Assert.IsNotNull(type);
                 Trace.TraceInformation("Found box {0}/{1:x} Type:{2}", boxName, boxType, type);
+            }
+        }
+
+        [TestMethod]
+        public void TestGetUuidType()
+        {
+            foreach (var boxName in BoxConstants.UuidBoxNames)
+            {
+                var type = BoxFactory.GetDeclaringType(boxName);
+                Assert.IsNotNull(type);
+                var boxType = type.GetCustomAttribute<BoxTypeAttribute>();
+                if (boxType != null)
+                {
+                    Trace.TraceInformation("Found box {0}/{1:x} Type:{2}", boxType.Type, boxType.ExtendedType, type);
+                }
             }
         }
 
