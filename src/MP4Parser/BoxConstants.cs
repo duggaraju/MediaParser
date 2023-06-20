@@ -49,6 +49,10 @@ namespace Media.ISO
         public const string TrackFragmentRandomAccessBox = "tfra";
         public const string MovieFragmentRandomOffsetBox = "mfro";
         private const string UuidBox = "uuid";
+
+
+        public const string TrackFragmentExtendedHeaderBox = "059b1d6dd542e64480e2141daff757b2";
+
         public static readonly uint UuidBoxType = UuidBox.GetBoxType();
 
         public static IEnumerable<string> BoxNames => typeof(BoxConstants).GetFields()

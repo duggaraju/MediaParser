@@ -1,9 +1,7 @@
-﻿using System;
-
-namespace Media.ISO.Boxes
+﻿namespace Media.ISO.Boxes
 {
     [BoxType(BoxConstants.TfdtBox)]
-    internal class TrackFragmentDecodeTimeBox : FullBox
+    public class TrackFragmentDecodeTimeBox : FullBox
     {
         public ulong BaseMediaDecodeTime { get; set; }   
 
@@ -15,6 +13,19 @@ namespace Media.ISO.Boxes
         {
             BaseMediaDecodeTime = Version == 1 ? reader.ReadUInt64() : reader.ReadUInt32();
             base.ParseContent(reader, boxEnd);
+        }
+
+        protected override void WriteBoxContent(BoxWriter writer)
+        {
+            base.WriteBoxContent(writer);
+            if (Version == 1)
+            {
+                writer.WriteUInt64(BaseMediaDecodeTime);
+            }
+            else
+            {
+                writer.WriteUInt32((uint) BaseMediaDecodeTime);
+            }
         }
     }
 }

@@ -13,9 +13,21 @@ namespace CommandLine
         static void DumpBox(Box box, int indent = 0)
         {
             var prefix = new String(' ', indent * 2);
-            Console.WriteLine($"{prefix}Box={box.Name} Size={box.Size} children={box.Children.Count}");
-            foreach (var child in box.Children)
-                DumpBox(child, indent + 1);
+            var extendedType = box.ExtendedType != null ? $"Guid={box.ExtendedType}" : string.Empty;
+            Console.WriteLine($"{prefix}Box={box.Name} Size={box.Size} {extendedType} children={box.Children.Count}");
+            if (box is TrackFragmentExtendedHeaderBox tfxd)
+            {
+                Console.WriteLine($"  {prefix}Time={tfxd.Time} Duration={tfxd.Duration}");
+            }
+            else if (box is TrackFragmentDecodeTimeBox tfdt)
+            {
+                Console.WriteLine($"  {prefix}Time={tfdt.BaseMediaDecodeTime}");
+            }
+            else
+            {
+                foreach (var child in box.Children)
+                    DumpBox(child, indent + 1);
+            }
         }
 
         static void Skip(Stream stream, int bytes)

@@ -86,7 +86,6 @@ namespace Media.ISO
         {
             Span<byte> array = stackalloc byte[16];
             Read(array);
-            array.Reverse();
             return new Guid(array);
         }
 

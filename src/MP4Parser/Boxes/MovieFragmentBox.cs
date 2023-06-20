@@ -12,7 +12,6 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 using System.Collections.Generic;
 
 namespace Media.ISO.Boxes
@@ -25,6 +24,14 @@ namespace Media.ISO.Boxes
         {
         }
 
-        public IEnumerable<TrackFragmentBox> Tracks => GetChildren<TrackFragmentBox>();
+        public IEnumerable<TrackFragmentBox> Tracks
+        {
+            get => GetChildren<TrackFragmentBox>();
+            set
+            {
+                Children.Clear();
+                Children.AddRange(value);
+            }
+        }
     }
 }

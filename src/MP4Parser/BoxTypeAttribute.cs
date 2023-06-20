@@ -11,7 +11,15 @@ namespace Media.ISO
 
         public BoxTypeAttribute(string boxType)
         {
-            Type = boxType;
+            if (Guid.TryParse(boxType, out var guid))
+            {
+                Type = "uuid";
+                ExtendedType = guid;
+            }
+            else
+            {
+                Type = boxType;
+            }
         }
 
         public BoxTypeAttribute(Guid extendedType) : 

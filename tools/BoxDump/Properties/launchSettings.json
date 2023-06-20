@@ -2,7 +2,7 @@
   "profiles": {
     "BoxDump": {
       "commandName": "Project",
-      "commandLineArgs": "-i C:\\Users\\krishndu\\source\\repos\\AMSMigrate\\AMSMigrate\\bin\\Debug\\net6.0\\video_200000.mp4"
+      "commandLineArgs": "-i dash.mp4 "
     }
   }
 }
