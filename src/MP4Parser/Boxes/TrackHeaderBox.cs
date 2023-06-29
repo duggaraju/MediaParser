@@ -17,10 +17,10 @@ using System.Diagnostics;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.TrackHeaderBox)]
+    [BoxType(BoxType.TrackHeaderBox)]
     public class TrackHeaderBox : FullBox
     {
-        public TrackHeaderBox() : base(BoxConstants.TrackHeaderBox)
+        public TrackHeaderBox() : base(BoxType.TrackHeaderBox)
         {
         }
 

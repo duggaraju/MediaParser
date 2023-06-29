@@ -17,27 +17,27 @@ using System.Linq;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.FileBox)]
+    [BoxType(BoxType.FileBox)]
     public class FileBox : Box
     {
         public FileBox()
-            : base(BoxConstants.FileBox)
+            : base(BoxType.FileBox)
         {
             CompatibleBrands = new List<int>();
         }
 
-        public int MajorBrand { get; set; }
+        public uint MajorBrand { get; set; }
 
-        public string MajorBrandName => MajorBrand.GetBoxName();
+        public string MajorBrandName => MajorBrand.GetFourCC();
 
-        public int MinorVersion { get; set; }
+        public uint MinorVersion { get; set; }
 
         public List<int> CompatibleBrands { get; private set; }
 
         protected override void ParseContent(BoxReader reader, long boxEnd)
         {
-            MajorBrand = reader.ReadInt32();
-            MinorVersion = reader.ReadInt32();
+            MajorBrand = reader.ReadUInt32();
+            MinorVersion = reader.ReadUInt32();
             while (reader.BaseStream.Position < boxEnd)
             {
                 CompatibleBrands.Add(reader.ReadInt32());
@@ -48,8 +48,8 @@ namespace Media.ISO.Boxes
 
         protected override void WriteBoxContent(BoxWriter writer)
         {
-            writer.WriteInt32(MajorBrand);
-            writer.WriteInt32(MinorVersion);
+            writer.WriteUInt32(MajorBrand);
+            writer.WriteUInt32(MinorVersion);
             CompatibleBrands.ForEach(writer.WriteInt32);
         }
 
@@ -57,7 +57,7 @@ namespace Media.ISO.Boxes
         {
             return base.ToString() +
                    string.Format("Major:{0} Minor:{1}, Brands:{2}", MajorBrandName, MinorVersion,
-                       string.Join(",", CompatibleBrands.Select(brand => ((uint)brand).GetBoxName())));
+                       string.Join(",", CompatibleBrands.Select(brand => ((uint)brand).GetFourCC())));
         }
     }
 }

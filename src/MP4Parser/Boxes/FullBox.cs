@@ -21,7 +21,7 @@ namespace Media.ISO.Boxes
     /// </summary>
     public class FullBox : Box
     {
-        public FullBox(uint type, Guid? extendedType = null) :
+        public FullBox(BoxType type, Guid? extendedType = null) :
             base(type, extendedType)
         {
         }

@@ -14,11 +14,11 @@
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.MovieFragmentRandomOffsetBox)]
+    [BoxType(BoxType.MovieFragmentRandomOffsetBox)]
     public class MovieFragmentRandomOffsetBox : FullBox
     {
         public MovieFragmentRandomOffsetBox()
-            : base(BoxConstants.MovieFragmentRandomOffsetBox)
+            : base(BoxType.MovieFragmentRandomOffsetBox)
         {
         }
 

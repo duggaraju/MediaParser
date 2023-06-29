@@ -14,11 +14,11 @@
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.TrackFragmentBox)]
+    [BoxType(BoxType.TrackFragmentBox)]
     public class TrackFragmentBox : ContainerBox
     {
         public TrackFragmentBox()
-            : base(BoxConstants.TrackFragmentBox)
+            : base(BoxType.TrackFragmentBox)
         {
         }
     }

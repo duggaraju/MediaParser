@@ -5,7 +5,7 @@ namespace Media.ISO
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class BoxTypeAttribute : Attribute
     {
-        public string Type { get; set; }
+        public BoxType Type { get; set; }
 
         public Guid? ExtendedType { get; set; }
 
@@ -13,19 +13,21 @@ namespace Media.ISO
         {
             if (Guid.TryParse(boxType, out var guid))
             {
-                Type = "uuid";
+                Type = BoxType.UuidBox;
                 ExtendedType = guid;
             }
             else
             {
-                Type = boxType;
+                var value = boxType.GetBoxType();
+                if (!Enum.IsDefined(typeof(BoxType), value))
+                    throw new ArgumentException($"Undefined box {value}", nameof(boxType));
+                Type = (BoxType) value;
             }
         }
 
-        public BoxTypeAttribute(Guid extendedType) : 
-            this("uuid")
+        public BoxTypeAttribute(BoxType boxType)
         {
-            ExtendedType = extendedType;
+            Type = boxType;
         }
     }
 }

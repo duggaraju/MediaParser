@@ -45,7 +45,7 @@ namespace Media.ISO.MP4Parser.Tests
             Assert.AreEqual(0L, box.Size);
         }
 
-        private void BoxParsingHelper(byte[] bytes, uint boxType, long boxSize, long bodyLength = 0, bool roundTrip = true)
+        private void BoxParsingHelper(byte[] bytes, BoxType boxType, long boxSize, long bodyLength = 0, bool roundTrip = true)
         {
             var stream = new MemoryStream(bytes);
             var box = BoxFactory.Parse(stream).Single();
@@ -77,7 +77,7 @@ namespace Media.ISO.MP4Parser.Tests
             {
                 0x00, 0x00, 0x00, length, 0xab, 0xcd, 0xef, 0x01
             };
-            BoxParsingHelper(bytes, 0xabcdef01u, bytes.Length);
+            BoxParsingHelper(bytes, (BoxType)0xabcdef01u, bytes.Length);
         }
 
         [TestMethod]
@@ -89,7 +89,7 @@ namespace Media.ISO.MP4Parser.Tests
                 0x00, 0x00, 0x00, length, 0xab, 0xcd, 0xef, 0x01,
                 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef
             };
-            BoxParsingHelper(bytes, 0xabcdef01u, bytes.Length, bodyLength:8);
+            BoxParsingHelper(bytes, (BoxType)0xabcdef01u, bytes.Length, bodyLength:8);
         }
 
         [TestMethod]
@@ -101,7 +101,7 @@ namespace Media.ISO.MP4Parser.Tests
                 0x00, 0x00, 0x00, 0x1, 0xab, 0xcd, 0xef, 0x01,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, length
             };            
-            BoxParsingHelper(bytes, 0xabcdef01u, bytes.Length, roundTrip:false);
+            BoxParsingHelper(bytes, (BoxType)0xabcdef01u, bytes.Length, roundTrip:false);
         }
 
         [TestMethod]
@@ -114,13 +114,13 @@ namespace Media.ISO.MP4Parser.Tests
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, length,
                 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef
             };
-            BoxParsingHelper(bytes, 0xabcdef01u, bytes.Length, bodyLength:8, roundTrip: false);
+            BoxParsingHelper(bytes, (BoxType)0xabcdef01u, bytes.Length, bodyLength:8, roundTrip: false);
         }
 
         [TestMethod]
         public void ParseBoxWithExtendedTypeNoBody()
         {
-            uint boxType = "uuid".GetBoxType();
+            var boxType = BoxType.UuidBox;
             var boxName = BitConverter.GetBytes((int) boxType);
             const byte length = 0x18;
             byte[] bytes =
@@ -135,7 +135,7 @@ namespace Media.ISO.MP4Parser.Tests
         [TestMethod]
         public void ParseBoxWithExtendedTypeAndBody()
         {
-            uint boxType = "uuid".GetBoxType();
+            var boxType = BoxType.UuidBox;
             var boxName = BitConverter.GetBytes((int)boxType);
             const byte length = 0x20;
             byte[] bytes =

@@ -16,11 +16,11 @@ using System.Collections.Generic;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.MovieBox)]
+    [BoxType(BoxType.MovieBox)]
     public class MovieBox : Box
     {
         public MovieBox()
-            : base(BoxConstants.MovieBox)
+            : base(BoxType.MovieBox)
         {
         }
 

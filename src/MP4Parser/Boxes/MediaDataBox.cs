@@ -14,10 +14,10 @@
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.MediaDataBox)]
+    [BoxType(BoxType.MediaDataBox)]
     public class MediaDataBox : Box
     {
-        public MediaDataBox() : base(BoxConstants.MediaDataBox)
+        public MediaDataBox() : base(BoxType.MediaDataBox)
         {
         }
     }

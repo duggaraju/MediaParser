@@ -28,7 +28,7 @@ namespace Media.ISO
         /// <summary>
         /// Convert a friendly string box name to a box type .
         /// </summary>
-        public static uint GetBoxType(this string boxName)
+        public static BoxType GetBoxType(this string boxName)
         {
             if(string.IsNullOrEmpty(boxName))
             {
@@ -41,27 +41,31 @@ namespace Media.ISO
 
             Span<byte> bytes = stackalloc byte[4];
             Encoding.ASCII.GetBytes(boxName, bytes);
-            return BinaryPrimitives.ReadUInt32BigEndian(bytes);
+            var value = BinaryPrimitives.ReadUInt32BigEndian(bytes);
+            //if (!Enum.IsDefined(typeof(BoxType), value))
+                //throw new ArgumentException($"Undefined box type for {boxName} {value:x}", nameof(boxName));
+            return (BoxType)value;
+
         }
 
         /// <summary>
         /// Convert a box type to a friend string name.
         /// </summary>
-        public static string GetBoxName(this uint type)
+        public static string GetBoxName(this BoxType type)
         {
-            return GetBoxName((int) type);
+            return GetFourCC((uint)type);
         }
 
-        public static string GetBoxName(this int type)
+        public static string GetFourCC(this uint type)
         {
             Span<byte> buffer = stackalloc byte[4];
-            BinaryPrimitives.WriteInt32BigEndian(buffer, type);
-            return Encoding.ASCII.GetString(buffer);            
+            BinaryPrimitives.WriteUInt32BigEndian(buffer, type);
+            return Encoding.ASCII.GetString(buffer);
         }
 
-        public static uint GetBoxType<T>() where T : Box
+        public static BoxType GetBoxType<T>() where T : Box
         {
-            return typeof(T).GetCustomAttribute<BoxTypeAttribute>().Type.GetBoxType();
+            return typeof(T).GetCustomAttribute<BoxTypeAttribute>().Type;
         }
     }
 }

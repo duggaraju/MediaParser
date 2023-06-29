@@ -12,6 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -22,49 +23,13 @@ namespace Media.ISO
     /// </summary>
     public static class BoxConstants
     {
-        public const string FileBox = "ftyp";
-        public const string MovieBox = "moov";
-        public const string MovieHeaderBox = "mvhd";
-        public const string TrackBox = "trak";
-        public const string TrackHeaderBox = "tkhd";
+        public const string TrackFragmentExtendedHeaderBox =
+            "aff757b2-141d-80e2-e644-d542059b1d6d";
 
-        public const string MediaDataBox = "mdat";
-
-        //misc boxes.
-        public const string FreeBox = "free";
-        public const string SkipBox = "skip";
-
-        //CMAF boxes.
-        public const string EmsgBox = "emsg";
-        public const string TfdtBox = "tfdt";
-        public const string PrftBox = "Prft";
-        public const string SidxBox = "sidx";
-
-        // Fragmented MP4 file boxes.
-        public const string MovieFragmentBox = "moof";
-        public const string MovieFragmentHeaderBox = "mfhd";
-        public const string TrackFragmentBox = "traf";
-        public const string TrackFragmentHeaderBox = "tfhd";
-        public const string MovieFragmentRandomAccessBox = "mfra";
-        public const string TrackFragmentRandomAccessBox = "tfra";
-        public const string MovieFragmentRandomOffsetBox = "mfro";
-        private const string UuidBox = "uuid";
-
-
-        public static readonly uint UuidBoxType = UuidBox.GetBoxType();
-
-        public const string TrackFragmentExtendedHeaderBox = "059b1d6dd542e64480e2141daff757b2";
-
-        public static IEnumerable<string> BoxNames => typeof(BoxConstants).GetFields()
+        public static IEnumerable<Guid> UuidBoxNames => typeof(BoxConstants).GetFields()
             .Where(field => field.IsLiteral && field.IsPublic)
             .Select(field => field.GetValue(null))
             .Cast<string>()
-            .Where(s => s != null && s.Length == 4);
-
-        public static IEnumerable<string> UuidBoxNames => typeof(BoxConstants).GetFields()
-            .Where(field => field.IsLiteral && field.IsPublic)
-            .Select(field => field.GetValue(null))
-            .Cast<string>()
-            .Where(s => s.Length == 32);
+            .Select(Guid.Parse);
     }
 }

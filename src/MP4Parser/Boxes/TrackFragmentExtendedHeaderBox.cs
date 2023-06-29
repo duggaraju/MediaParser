@@ -13,7 +13,7 @@ namespace Media.ISO.Boxes
         public ulong Duration { get; set; }
 
         public TrackFragmentExtendedHeaderBox() 
-            : base(BoxConstants.UuidBoxType, new Guid(BoxConstants.TrackFragmentExtendedHeaderBox))
+            : base(BoxType.UuidBox, new Guid(BoxConstants.TrackFragmentExtendedHeaderBox))
         {
         }
 

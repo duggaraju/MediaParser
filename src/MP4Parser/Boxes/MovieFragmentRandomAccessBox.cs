@@ -16,11 +16,11 @@ using System.Linq;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.MovieFragmentRandomAccessBox)]
+    [BoxType(BoxType.MovieFragmentRandomAccessBox)]
     public class MovieFragmentRandomAccessBox : ContainerBox
     {
         public MovieFragmentRandomAccessBox()
-            : base(BoxConstants.MovieFragmentRandomAccessBox)
+            : base(BoxType.MovieFragmentRandomAccessBox)
         {
         }
 

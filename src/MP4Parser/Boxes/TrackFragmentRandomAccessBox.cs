@@ -16,11 +16,11 @@ using System.Collections.Generic;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.TrackFragmentRandomAccessBox)]
+    [BoxType(BoxType.TrackFragmentRandomAccessBox)]
     public class TrackFragmentRandomAccessBox : FullBox
     {
         public TrackFragmentRandomAccessBox()
-            : base(BoxConstants.TrackFragmentRandomAccessBox)
+            : base(BoxType.TrackFragmentRandomAccessBox)
         {
         }
 

@@ -16,11 +16,11 @@ using System.Linq;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.TrackBox)]
+    [BoxType(BoxType.TrackBox)]
     public class TrackBox : ContainerBox
     {
         public TrackBox()
-            : base(BoxConstants.TrackBox)
+            : base(BoxType.TrackBox)
         {
         }
 

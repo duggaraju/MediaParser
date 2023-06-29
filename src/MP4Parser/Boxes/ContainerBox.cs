@@ -20,12 +20,7 @@ namespace Media.ISO.Boxes
     public abstract class ContainerBox : Box
     {
 
-        protected ContainerBox(uint boxType) : base(boxType)
-        {
-        }
-
-        protected ContainerBox(string boxName)
-            : base(boxName)
+        protected ContainerBox(BoxType boxType) : base(boxType)
         {
         }
 

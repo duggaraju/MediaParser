@@ -1,7 +1,7 @@
 ﻿
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.EmsgBox)]
+    [BoxType(BoxType.EmsgBox)]
     public class EventMessageBox : FullBox
     {
         public override bool CanHaveChildren => false;
@@ -18,7 +18,7 @@ namespace Media.ISO.Boxes
 
         public uint Duration { get; set; }
 
-        public EventMessageBox(): base(BoxConstants.EmsgBox)
+        public EventMessageBox(): base(BoxType.EmsgBox)
         {
         }
 

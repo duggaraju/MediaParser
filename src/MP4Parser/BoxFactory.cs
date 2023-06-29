@@ -17,6 +17,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Media.ISO.Boxes;
 
@@ -27,22 +28,22 @@ namespace Media.ISO
     /// </summary>
     public static class BoxFactory
     {
-        private static readonly Dictionary<Guid, Type> UuidBoxes = new Dictionary<Guid, Type>();
-        private static readonly Dictionary<uint, Type> Boxes = new Dictionary<uint, Type>();
+        private static readonly Dictionary<Guid, Type> UuidBoxes = new ();
+        private static readonly Dictionary<BoxType, Type> Boxes = new ();
 
         static BoxFactory()
         {
             var assembly = Assembly.GetExecutingAssembly();
-            foreach (var type in assembly.GetTypes())
+            foreach (var type in assembly.GetTypes().Where(t => t.IsSubclassOf(typeof(Box))))
             {
                 var attribute = type.GetCustomAttribute<BoxTypeAttribute>();
                 if (attribute != null)
                 {
-                    var boxType = attribute.Type.GetBoxType();
+                    var boxType = attribute.Type;
                     Trace.TraceInformation("Declared box {0}/{1:x} Type:{2}", attribute.Type, boxType, type);
                     if (attribute.ExtendedType == null)
                     {
-                        Boxes.Add(attribute.Type.GetBoxType(), type);
+                        Boxes.Add(attribute.Type, type);
                     }
                     else
                     {
@@ -55,10 +56,10 @@ namespace Media.ISO
         /// <summary>
         /// Get the Type where the box is declared.
         /// </summary>
-        public static Type GetDeclaringType(uint type, Guid? extendedType = null)
+        public static Type GetDeclaringType(BoxType type, Guid? extendedType = null)
         {
             Type declaringType;
-            if (type == BoxConstants.UuidBoxType)
+            if (type == BoxType.UuidBox)
             {
                 if (extendedType == null || !UuidBoxes.TryGetValue(extendedType.Value, out declaringType))
                 {
@@ -117,14 +118,14 @@ namespace Media.ISO
         {
             long size = BinaryPrimitives.ReadUInt32BigEndian(buffer);
             buffer = buffer.Slice(4);
-            var type = BinaryPrimitives.ReadUInt32BigEndian(buffer);
+            var type = (BoxType)BinaryPrimitives.ReadUInt32BigEndian(buffer);
             Guid? extendedType = null;
             if (size == 0 && buffer.Length >= 8)
             {
                 size = BinaryPrimitives.ReadInt64BigEndian(buffer);
                 buffer = buffer.Slice(8);
             }
-            if (type == BoxConstants.UuidBoxType && buffer.Length >= 16)
+            if (type == BoxType.UuidBox && buffer.Length >= 16)
             {
                 extendedType = new Guid(buffer);
             }
@@ -164,7 +165,7 @@ namespace Media.ISO
         /// <summary>
         /// Create an instance of the box for the given box type.
         /// </summary>
-        public static Box Create(uint type, Guid? extendedType = null)
+        public static Box Create(BoxType type, Guid? extendedType = null)
         {
             Type declaringType = GetDeclaringType(type, extendedType);
             var boxName = type.GetBoxName();
@@ -174,7 +175,7 @@ namespace Media.ISO
                 object[] args;
                 if (declaringType == typeof(Box))
                 {
-                    var argTypes = new[] { typeof(uint), typeof(Guid?) };
+                    var argTypes = new[] { typeof(BoxType), typeof(Guid?) };
                     constructor = declaringType.GetConstructor(argTypes);
                     args = new object[] { type, extendedType };
                 }

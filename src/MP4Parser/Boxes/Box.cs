@@ -20,7 +20,7 @@ using System.Linq;
 
 namespace Media.ISO.Boxes
 {
-    public record struct BoxHeader(long Size, uint Type, Guid? ExtendedType);
+    public record struct BoxHeader(long Size, BoxType Type, Guid? ExtendedType);
 
 	/// <summary>
 	/// Common base class for all MP4 boxes.
@@ -30,7 +30,7 @@ namespace Media.ISO.Boxes
         /// <summary>
         /// The type of the box.
         /// </summary>
-        public uint Type { get; }
+        public BoxType Type { get; }
 
         /// <summary>
         /// The size of the box.
@@ -43,7 +43,7 @@ namespace Media.ISO.Boxes
 
         public Memory<byte> Body { get; set; } = Array.Empty<byte>();
 
-		public Box(uint type, Guid? extendedType = null)
+		public Box(BoxType type, Guid? extendedType = null)
         {
             Type = type;
 		    ExtendedType = extendedType;
@@ -128,7 +128,7 @@ namespace Media.ISO.Boxes
             try
             {
                 long size = reader.ReadUInt32();
-                var type = reader.ReadUInt32();
+                var type = (BoxType) reader.ReadUInt32();
                 Guid? extendedType = null;
 
                 if (size == 0)
@@ -141,11 +141,11 @@ namespace Media.ISO.Boxes
                     size = reader.ReadInt64();
                 }
 
-                if (type == BoxConstants.UuidBoxType)
+                if (type == BoxType.UuidBox)
                 {
                     extendedType = reader.ReadGuid();
                 }
-                return new BoxHeader(size, type, extendedType);
+                return new BoxHeader(size, (BoxType)type, extendedType);
             }
             catch (Exception e)
             {
@@ -246,7 +246,7 @@ namespace Media.ISO.Boxes
 	        {
 	            writer.WriteUInt32(1U);
 	        }
-            writer.WriteUInt32(Type);
+            writer.WriteUInt32((uint)Type);
 	        if (ExtendedType.HasValue)
 	        {
 	            writer.Write(ExtendedType.Value);
@@ -259,14 +259,13 @@ namespace Media.ISO.Boxes
             {
                 throw new ArgumentException("Insufficient buffer", nameof(buffer));
             }
-            BinaryPrimitives.WriteUInt32BigEndian(buffer, Type);
+            BinaryPrimitives.WriteUInt32BigEndian(buffer, (uint)Type);
             buffer = buffer.Slice(4);
             BinaryPrimitives.WriteUInt32BigEndian(buffer, (uint)Size);
             buffer = buffer.Slice(4);
             if (ExtendedType.HasValue)
             {
                 ExtendedType.Value.TryWriteBytes(buffer);
-                buffer = buffer.Slice(16);
             }
         }
 
@@ -280,8 +279,7 @@ namespace Media.ISO.Boxes
 
 	    public IEnumerable<T> GetChildren<T>() where T:Box
 	    {
-            var type = BoxExtensions.GetBoxType<T>();
-	        return Children.Where(child => child.Type == type).Cast<T>();
+	        return Children.Where(child => child is T).Cast<T>();
 	    }
 
 	    public T GetSingleChild<T>() where T : Box

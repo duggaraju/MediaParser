@@ -18,6 +18,7 @@ using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Media.ISO.Boxes;
 using System.Reflection;
+using System;
 
 namespace Media.ISO.MP4Parser.Tests
 {
@@ -37,9 +38,9 @@ namespace Media.ISO.MP4Parser.Tests
         [TestMethod]
         public void TestGetType()
         {
-            foreach (var boxName in BoxConstants.BoxNames)
+            foreach (BoxType boxType in Enum.GetValues(typeof(BoxType)))
             {
-                var boxType = boxName.GetBoxType();
+                var boxName = boxType.GetBoxName();
                 var type = BoxFactory.GetDeclaringType(boxType);
                 Assert.IsNotNull(type);
                 Trace.TraceInformation("Found box {0}/{1:x} Type:{2}", boxName, boxType, type);
@@ -51,7 +52,7 @@ namespace Media.ISO.MP4Parser.Tests
         {
             foreach (var boxName in BoxConstants.UuidBoxNames)
             {
-                var type = BoxFactory.GetDeclaringType(boxName);
+                var type = BoxFactory.GetDeclaringType(BoxType.UuidBox, boxName);
                 Assert.IsNotNull(type);
                 var boxType = type.GetCustomAttribute<BoxTypeAttribute>();
                 if (boxType != null)
