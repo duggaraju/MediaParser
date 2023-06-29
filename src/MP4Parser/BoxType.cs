@@ -18,7 +18,7 @@ namespace Media.ISO
 
         //CMAF boxes.
         EmsgBox = 0x656d7367,
-        TfdtBox = 0x74666474,
+        TrackFragmentDecodeTimeBox = 0x74666474,
         PrftBox = 0x50726674,
         SidxBox = 0x73696478,
 

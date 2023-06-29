@@ -1,13 +1,15 @@
 ﻿namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.TfdtBox)]
+    [BoxType(BoxType.TrackFragmentDecodeTimeBox)]
     public class TrackFragmentDecodeTimeBox : FullBox
     {
         public ulong BaseMediaDecodeTime { get; set; }   
 
-        public TrackFragmentDecodeTimeBox() : base(BoxType.TfdtBox)
+        public TrackFragmentDecodeTimeBox() : base(BoxType.TrackFragmentDecodeTimeBox)
         {
         }
+
+        protected override long BoxContentSize => Version == 1 ? sizeof(ulong) : sizeof(uint);
 
         protected override void ParseContent(BoxReader reader, long boxEnd)
         {
