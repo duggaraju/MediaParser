@@ -140,6 +140,11 @@ namespace Media.ISO
             return box;
         }
 
+        public static T Parse<T>(ReadOnlySpan<byte> buffer) where T : Box
+        {
+            return (T) Parse(buffer);
+        }
+
         /// <summary>
         /// Parses a single box from the stream 
         /// </summary>
@@ -155,6 +160,11 @@ namespace Media.ISO
             box.Size = size;
             box.Parse(reader, offset, depth);
             return box;
+        }
+
+        public static T Parse<T>(BoxReader reader) where T: Box
+        {
+            return (T) Parse(reader);
         }
 
         public static Box Create(string boxName, Guid? extendedType = null)

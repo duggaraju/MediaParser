@@ -6,7 +6,9 @@ using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CommandLine
@@ -58,8 +60,61 @@ namespace CommandLine
             }
         }
 
+        public static async Task TransMuxSmoothAsync(Stream source, Stream destination, CancellationToken cancellationToken)
+        {
+            var header = new byte[8];
+            ulong offset = 0;
+
+            while (true)
+            {
+                var bytes = await source.ReadAsync(header, cancellationToken);
+                if (bytes == 0) break;
+                var box = BoxFactory.Parse(header.AsSpan());
+                Console.WriteLine("Found box {0} size {1}", box.Type.GetBoxName(), box.Size);
+                var size = (int)box.Size;
+                var buffer = new byte[size];
+                header.CopyTo(buffer.AsMemory());
+                await source.ReadAsync(buffer.AsMemory(8), cancellationToken);
+                if (box.Type == BoxType.MovieFragmentBox)
+                {
+                    var stream = new MemoryStream(buffer);
+                    var moof = (MovieFragmentBox)BoxFactory.Parse(new BoxReader(stream));
+                    foreach (var track in moof.Tracks)
+                    {
+                        var tfxd = track.GetChildren<TrackFragmentExtendedHeaderBox>().SingleOrDefault();
+                        if(tfxd != null)
+                        {
+                            if (offset == 0 && tfxd.Time != 0)
+                                offset = tfxd.Time;
+                            var tfdt = new TrackFragmentDecodeTimeBox();
+                            tfdt.BaseMediaDecodeTime = tfxd.Time - offset;
+                            track.Children.Remove(tfxd);
+                            track.Children.Insert(0, tfdt);
+                            moof.ComputeSize();
+                        }
+                    }
+                    moof.Write(destination);
+                }
+                else if (box.Type == BoxType.UuidBox)
+                {
+                    Console.WriteLine("Ignoring top level uuid box");
+                }
+                else
+                {
+                    await destination.WriteAsync(buffer, cancellationToken);
+                }
+            }
+        }
+
         static async Task Main(string[] args)
         {
+            var files = Directory.GetFiles(@"D:\media\", "*331.ismv");
+            await Task.WhenAll(files.Select(async file =>
+            {
+                using var source = File.OpenRead(file);
+                using var dest = File.OpenWrite(Path.Combine(@"D:\temp\", Path.GetFileName(file)));
+                await TransMuxSmoothAsync(source, dest, default);
+            }));
             var fileOption = new Option<Uri>(
                 aliases: new[] { "-i", "--input-file" },
                 description: "file to open")
