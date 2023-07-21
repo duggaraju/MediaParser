@@ -27,7 +27,9 @@ namespace Media.ISO
         MovieFragmentHeaderBox = 0x6d666864,
         TrackFragmentBox = 0x74726166,
         TrackFragmentHeaderBox = 0x74666864,
-        MovieFragmentRandomAccessBox  = 0x6d667261,
+        TrackFragmentRunBox = 0x7472756e,
+        SampleDependencyTypeBox = 0x73647470,
+        MovieFragmentRandomAccessBox = 0x6d667261,
         TrackFragmentRandomAccessBox = 0x74667261,
         MovieFragmentRandomOffsetBox = 0x6d66726f,
     }

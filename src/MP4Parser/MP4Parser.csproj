@@ -12,7 +12,7 @@
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 	<RepositoryUrl>https://github.com/duggaraju/MP4Parser</RepositoryUrl>
     <Nullable>warnings</Nullable>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <AssemblyName>Media.ISO.BMFFParser</AssemblyName>
     <LangVersion>latest</LangVersion>
     <PackageId>Mp4.Parser</PackageId>
