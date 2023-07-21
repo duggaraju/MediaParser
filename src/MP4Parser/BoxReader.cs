@@ -25,6 +25,7 @@ namespace Media.ISO
     public class BoxReader
     {
         public  readonly Stream BaseStream;
+        
         /// <summary>
         /// Construct with a given stream.
         /// </summary>
@@ -33,34 +34,60 @@ namespace Media.ISO
             BaseStream = stream;
         }
 
-        private int Read(Span<byte> buffer)
+        public bool TryRead(Span<byte> buffer)
         {
             var bytes = BaseStream.Read(buffer);
             if (bytes == 0)
+                return false; // end of stream.
+            if (bytes < buffer.Length)
             {
-                throw new EndOfStreamException();
+                throw new InvalidDataException("Not enough bytes");
             }
-            return bytes;
+            return true;
         }
 
         public short ReadInt16()
         {
             Span<byte> shortValue = stackalloc byte[2];
-            Read(shortValue);
+            TryRead(shortValue);
             return BinaryPrimitives.ReadInt16BigEndian(shortValue);
+        }
+
+        public bool TryReadInt32(out int value)
+        {
+            value = default;
+            Span<byte> intValue = stackalloc byte[4];
+            if (TryRead(intValue))
+            {
+                value = BinaryPrimitives.ReadInt32BigEndian(intValue);
+                return true;
+            }
+            return false;
+        }
+
+        public bool TryReadUInt32(out uint value)
+        {
+            if (TryReadInt32(out var val))
+            {
+                value = (uint)val;
+                return true;
+            }
+            else
+            {
+                value = default;
+                return false;
+            }
         }
 
         public int ReadInt32()
         {
-            Span<byte> intValue = stackalloc byte[4];
-            intValue = intValue.Slice(0, Read(intValue));
-            return BinaryPrimitives.ReadInt32BigEndian(intValue);
+            return TryReadInt32(out var value) ? value : throw new EndOfStreamException();
         }
 
         public long ReadInt64()
         {
             Span<byte> longValue = stackalloc byte[8];
-            Read(longValue);
+            TryRead(longValue);
             return BinaryPrimitives.ReadInt64BigEndian(longValue);
         }
 
@@ -69,9 +96,10 @@ namespace Media.ISO
             return (ushort) ReadInt16();
         }
 
+
         public uint ReadUInt32()
         {
-            return (uint) ReadInt32();
+            return TryReadInt32(out var value) ? (uint) value : throw new EndOfStreamException();
         }
 
         public ulong ReadUInt64()
@@ -85,7 +113,7 @@ namespace Media.ISO
         public Guid ReadGuid()
         {
             Span<byte> array = stackalloc byte[16];
-            Read(array);
+            TryRead(array);
             array.Reverse();
             return new Guid(array);
         }
@@ -123,7 +151,9 @@ namespace Media.ISO
                 Span<byte> buffer = stackalloc byte[Math.Min(8 * 1024, bytesToSkip)];
                 while (bytesToSkip > 0)
                 {
-                    int bytesRead = Read(buffer);
+                    int bytesRead = BaseStream.Read(buffer);
+                    if (bytesRead == 0)
+                        throw new EndOfStreamException();
                     bytesToSkip -= bytesRead;
                 }
             }

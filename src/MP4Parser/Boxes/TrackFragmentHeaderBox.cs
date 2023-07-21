@@ -15,7 +15,7 @@
         private ulong _baseDataOffset;
         private uint _sampleDescriptionIndex;
 
-        protected override long BoxContentSize =>
+        protected override int BoxContentSize =>
             sizeof(uint) +
             ((Flags & BaseDataOffsetPresent) == 0 ? 0 : sizeof(ulong)) +
             ((Flags & SampleDescriptionIndexPresent) == 0 ? 0 : sizeof(uint)) +
@@ -78,7 +78,7 @@
         {
         }
 
-        protected override void ParseContent(BoxReader reader, long boxEnd)
+        protected override void ParseContent(BoxReader reader)
         {
             TrackId = reader.ReadUInt32();
             if ((Flags & BaseDataOffsetPresent) != 0)

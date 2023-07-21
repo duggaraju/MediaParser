@@ -67,5 +67,16 @@ namespace Media.ISO
         {
             return typeof(T).GetCustomAttribute<BoxTypeAttribute>().Type;
         }
+
+        public static bool TryParseBox(BoxReader reader, out Box? box)
+        {
+            if (Box.TryParseHeader(reader, out var header))
+            {
+                box = BoxFactory.Create(header);
+                return true;
+            }
+            box = default;
+            return false;
+        }
     }
 }

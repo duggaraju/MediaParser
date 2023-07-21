@@ -12,14 +12,11 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Diagnostics;
-
 namespace Media.ISO.Boxes
 {
     // A genric container box that only has child boxes and no box specific content.
     public abstract class ContainerBox : Box
     {
-
         protected ContainerBox(BoxType boxType) : base(boxType)
         {
         }
@@ -29,14 +26,14 @@ namespace Media.ISO.Boxes
         /// <summary>
         /// Container boxes do not any box specific content. so helper to accidentally overriding the same.
         /// </summary>
-        protected override sealed void ParseContent(BoxReader reader, long boxEnd)
+        protected override sealed void ParseContent(BoxReader reader)
         {
-            Debug.Assert(false);
+            throw new ParseException("A container box should not have body");
         }
 
         protected override sealed void WriteBoxContent(BoxWriter writer)
         {
-            Debug.Assert(false);
+            throw new ParseException("A container box should not have body");
         }
     }
 }

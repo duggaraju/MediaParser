@@ -9,12 +9,11 @@
         {
         }
 
-        protected override long BoxContentSize => Version == 1 ? sizeof(ulong) : sizeof(uint);
+        protected override int BoxContentSize => Version == 1 ? sizeof(ulong) : sizeof(uint);
 
-        protected override void ParseContent(BoxReader reader, long boxEnd)
+        protected override void ParseContent(BoxReader reader)
         {
             BaseMediaDecodeTime = Version == 1 ? reader.ReadUInt64() : reader.ReadUInt32();
-            base.ParseContent(reader, boxEnd);
         }
 
         protected override void WriteBoxContent(BoxWriter writer)

@@ -33,7 +33,7 @@ namespace Media.ISO.Boxes
         {
         }
 
-        protected override long HeaderSize => base.HeaderSize + 4;
+        protected override int HeaderSize => base.HeaderSize + 4;
 
         protected override void ParseHeader(BoxReader reader)
         {

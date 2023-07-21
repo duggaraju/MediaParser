@@ -16,6 +16,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -82,7 +83,7 @@ namespace Media.ISO
 
         public static Type GetDeclaringType(string boxName)
         {
-            Type declaringType = null;
+            Type? declaringType;
             if (Guid.TryParse(boxName, out var guid))
             {
                 UuidBoxes.TryGetValue(guid, out declaringType);
@@ -105,44 +106,45 @@ namespace Media.ISO
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>
-        public static IEnumerable<Box> Parse(Stream stream)
+        public static IEnumerable<Box> ParseBoxes(this Stream stream)
         {
             var reader = new BoxReader(stream);
-            while (stream.Position < stream.Length)
+            while (reader.TryParseBox(out var box))
             {
-                yield return Parse(reader);
+                yield return box;
             }
         }
 
         public static BoxHeader LookupBox(ReadOnlySpan<byte> buffer)
         {
-            long size = BinaryPrimitives.ReadUInt32BigEndian(buffer);
-            buffer = buffer.Slice(4);
-            var type = (BoxType)BinaryPrimitives.ReadUInt32BigEndian(buffer);
-            Guid? extendedType = null;
-            if (size == 0 && buffer.Length >= 8)
-            {
-                size = BinaryPrimitives.ReadInt64BigEndian(buffer);
-                buffer = buffer.Slice(8);
-            }
-            if (type == BoxType.UuidBox && buffer.Length >= 16)
-            {
-                extendedType = new Guid(buffer);
-            }
-            return new BoxHeader(size, type, extendedType);
+            var header = new BoxHeader();
+            header.Parse(buffer);
+            return header;
         }
 
         public static Box Parse(ReadOnlySpan<byte> buffer)
         {
-            var (size, type, extendedType) = LookupBox(buffer);
-            var box = Create(type, extendedType);
-            box.Size = size;
-            return box;
+            var header = LookupBox(buffer);
+            return Create(header);
         }
 
         public static T Parse<T>(ReadOnlySpan<byte> buffer) where T : Box
         {
             return (T) Parse(buffer);
+        }
+
+        public static bool TryParseBox(this BoxReader reader, [MaybeNullWhen(returnValue: false)]out Box box, int depth = int.MaxValue)
+        {
+            var offset = reader.BaseStream.CanSeek ? reader.BaseStream.Position : 0;
+            if (Box.TryParseHeader(reader, out var header))
+            {
+                Trace.TraceInformation("Found Box:{0} Size:{1} at Offset:{2:x}", header.Type.GetBoxName(), header.Size, offset);
+                box = Create(header);
+                box.Parse(reader, depth);
+                return true;
+            }
+            box = default;
+            return false;
         }
 
         /// <summary>
@@ -151,57 +153,36 @@ namespace Media.ISO
         /// <param name="reader"></param>
         /// <param name="depth"></param>
         /// <returns></returns>
-        public static Box Parse(BoxReader reader, int depth = int.MaxValue)
+        public static Box Parse(this BoxReader reader, int depth = int.MaxValue)
         {
-            long offset = reader.BaseStream.Position;
-            var (size, type, extendedType) = Box.ParseBoxHeader(reader);
-            Trace.TraceInformation("Found Box:{0} Size:{1} at Offset:{2:x}", type.GetBoxName(), size, offset);
-            var box = Create(type, extendedType);
-            box.Size = size;
-            box.Parse(reader, offset, depth);
-            return box;
+            return reader.TryParseBox(out var box, depth) ? box : throw new InvalidDataException();
         }
 
-        public static T Parse<T>(BoxReader reader) where T: Box
+        public static T? Parse<T>(BoxReader reader) where T: Box
         {
-            return (T) Parse(reader);
-        }
-
-        public static Box Create(string boxName, Guid? extendedType = null)
-        {
-            return Create(boxName.GetBoxType(), extendedType);
+            return (T?) Parse(reader);
         }
 
         /// <summary>
         /// Create an instance of the box for the given box type.
         /// </summary>
-        public static Box Create(BoxType type, Guid? extendedType = null)
+        public static Box Create(BoxHeader header)
         {
-            Type declaringType = GetDeclaringType(type, extendedType);
-            var boxName = type.GetBoxName();
-            try
+            Type declaringType = GetDeclaringType(header.Type, header.ExtendedType);
+            Box box;
+            if (declaringType == typeof(Box))
             {
-                ConstructorInfo constructor;
-                object[] args;
-                if (declaringType == typeof(Box))
-                {
-                    var argTypes = new[] { typeof(BoxType), typeof(Guid?) };
-                    constructor = declaringType.GetConstructor(argTypes);
-                    args = new object[] { type, extendedType };
-                }
-                else
-                {
-                    constructor = declaringType.GetConstructor(new Type[0]);
-                    args = Array.Empty<object>();
-                }
-                return (Box)constructor.Invoke(args);
+                box = new Box(header);
             }
-            catch (Exception ex)
+            else
             {
-                throw new ParseException("Did not find matching constructor in box.", ex);
-
+                var constructor = declaringType.GetConstructor(new Type[0]);
+                var args = Array.Empty<object>();
+                box = (Box)constructor.Invoke(args);
             }
-
+            box.Size = header.Size;
+            box._forceLongSize = header.LongSize;
+            return box;
         }
 
         /// <summary>

@@ -13,7 +13,6 @@
 //limitations under the License.
 
 using System;
-using System.Diagnostics;
 using System.IO;
 
 namespace Media.ISO
@@ -21,9 +20,8 @@ namespace Media.ISO
     /// <summary>
     /// A stream implementation over a partial range of the bytes.
     /// </summary>
-    public class SubStream : Stream
+    public sealed class SubStream : Stream
     {
-
         public SubStream(Stream baseStream, long offset, long length)
         {
             if (baseStream == null)
@@ -98,26 +96,12 @@ namespace Media.ISO
             base.Dispose(disposing);
             if (disposing)
             {
-                if (_stream != null)
-                {
-                    try
-                    {
-                        _stream.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        Trace.TraceError("Error:{0}", ex);
-                        throw;
-                    }
-                    _stream = null;
-                }
+                _stream.Dispose();
             }
         }
 
         private Stream _stream;
-
         private readonly long _offset;
-
         private readonly long _length;
     }
 }

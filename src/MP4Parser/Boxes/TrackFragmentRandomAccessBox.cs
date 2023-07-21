@@ -58,10 +58,17 @@ namespace Media.ISO.Boxes
         /// </summary>
         public readonly List<Entry> Entries = new List<Entry>();
 
+        protected override int BoxContentSize =>
+            12 +
+            Entries.Count * EntrySize;
+
+        private int EntrySize => 
+            (Version == 1 ? 16 : 8) + SizeOfTrackFragmentNumber + SizeOfTrackRunNumber + SizeOfSampleNumber + 3;
+
         /// <summary>
         /// Parse the box content.
         /// </summary>
-        protected override void ParseContent(BoxReader reader, long boxEnd)
+        protected override void ParseContent(BoxReader reader)
         {
             TrackId = reader.ReadUInt32();
             _sizeOfEntry = reader.ReadInt32();

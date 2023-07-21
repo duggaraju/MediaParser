@@ -6,11 +6,11 @@ namespace Media.ISO.Boxes
     {
         public override bool CanHaveChildren => false;
 
-        public string Scheme { get; set; }
+        public string Scheme { get; set; } = string.Empty;
 
         public uint Id { get; set; }
 
-        public string Value { get; set; }
+        public string Value { get; set; } = string.Empty;
 
         public uint TimeScale { get; set; }
 
@@ -22,7 +22,13 @@ namespace Media.ISO.Boxes
         {
         }
 
-        protected override void ParseContent(BoxReader reader, long boxEnd)
+        protected override int BoxContentSize =>
+            Scheme.Length + 1 +
+            Value.Length + 1 +
+            sizeof(uint) * 3 +
+            (Version == 1 ? sizeof(ulong) : sizeof(uint));
+
+        protected override void ParseContent(BoxReader reader)
         {
             if (Version == 0)
             {
@@ -42,12 +48,28 @@ namespace Media.ISO.Boxes
                 Scheme = reader.ReadString();
                 Value = reader.ReadString();
             }
-            base.ParseContent(reader, boxEnd);
         }
 
         protected override void WriteBoxContent(BoxWriter writer)
         {
-            base.WriteBoxContent(writer);
+            if (Version == 0)
+            {
+                writer.WriteString(Scheme);
+                writer.WriteString(Value);
+                writer.WriteUInt32(TimeScale);
+                writer.WriteUInt32((uint)PresentationTime);
+                writer.WriteUInt32(Duration);
+                writer.WriteUInt32(Id);
+            }
+            else if (Version == 1)
+            {
+                writer.WriteUInt32(TimeScale);
+                writer.WriteUInt64(PresentationTime);
+                writer.WriteUInt32(Duration);
+                writer.WriteUInt32(Id);
+                writer.WriteString(Scheme);
+                writer.WriteString(Value);
+            }
         }
     }
 }

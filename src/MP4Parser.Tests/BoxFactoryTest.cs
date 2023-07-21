@@ -84,7 +84,7 @@ namespace Media.ISO.MP4Parser.Tests
             {
                 using var stream = new FileStream(fileName, FileMode.Open);
                 using var filestream = new FileStream(outputFile, FileMode.OpenOrCreate);
-                var boxes = BoxFactory.Parse(stream);
+                var boxes = BoxFactory.ParseBoxes(stream);
                 var writer = new BoxWriter(filestream);
                 foreach (var box in boxes)
                 {

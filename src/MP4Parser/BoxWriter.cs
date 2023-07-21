@@ -35,7 +35,7 @@ namespace Media.ISO
 
         #region signed writes
 
-        public void Write(Span<byte> data)
+        public void Write(ReadOnlySpan<byte> data)
         {
             BaseStream.Write(data);
         }
@@ -147,6 +147,15 @@ namespace Media.ISO
                     bytes -= buffer.Length;
                 }
             }
+        }
+
+        public void WriteString(string value)
+        {
+            foreach (char c in value)
+            {
+                BaseStream.WriteByte((byte)c);
+            }
+            BaseStream.WriteByte(0);
         }
     }
 }

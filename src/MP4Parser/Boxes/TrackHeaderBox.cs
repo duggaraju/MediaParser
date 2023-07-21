@@ -44,10 +44,17 @@ namespace Media.ISO.Boxes
 
         public uint Height { get; set; }
 
+        protected override int BoxContentSize => 
+            (Version == 1 ? 16 : 8) +  // creation + modification.
+            8 + // trackid + reserved
+            (Version == 1 ? 8 : 4) + // duration
+            24 +
+            Matrix.Length * 4;
+
         /// <summary>
         /// Parse the box content.
         /// </summary>
-        protected override void ParseContent(BoxReader reader, long boxEnd)
+        protected override void ParseContent(BoxReader reader)
         {
             if (Version == 1)
             {

@@ -48,7 +48,7 @@ namespace Media.ISO.MP4Parser.Tests
         private void BoxParsingHelper(byte[] bytes, BoxType boxType, long boxSize, long bodyLength = 0, bool roundTrip = true)
         {
             var stream = new MemoryStream(bytes);
-            var box = BoxFactory.Parse(stream).Single();
+            var box = BoxFactory.ParseBoxes(stream).Single();
             Assert.AreEqual(boxSize, box.Size);
             Assert.AreEqual(boxType, box.Type);
 
@@ -154,7 +154,7 @@ namespace Media.ISO.MP4Parser.Tests
             var stream = new MemoryStream(bytes);
             try
             {
-                box = BoxFactory.Parse(stream).Single();
+                box = BoxFactory.ParseBoxes(stream).Single();
             }
             catch (Exception e)
             {

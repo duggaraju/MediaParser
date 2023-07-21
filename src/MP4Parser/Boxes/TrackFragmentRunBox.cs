@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Media.ISO.Boxes
 {
@@ -23,7 +24,7 @@ namespace Media.ISO.Boxes
             public int? CompostionOffset { get; set; }
         }
 
-        public List<SampleInfo> Samples { get; set; }
+        public IList<SampleInfo> Samples { get; set; } = Array.Empty<SampleInfo>();
 
         public int SampleCount => Samples?.Count ?? 0;
 
@@ -33,7 +34,7 @@ namespace Media.ISO.Boxes
 
         public TrackFragmentRunBox() : base(BoxType.TrackFragmentRunBox) { }
 
-        protected override long BoxContentSize => 
+        protected override int BoxContentSize => 
             sizeof(uint) +
             ((Flags & DataOffsetPresent) != 0 ? sizeof(uint) : 0 ) +
             ((Flags & FirstSampleFlagsPresent) != 0 ? sizeof(uint) : 0) +
@@ -49,7 +50,7 @@ namespace Media.ISO.Boxes
                 ((flags & SampleCompositionOffsetPresent) != 0 ? sizeof(int) : 0);
         }
 
-        protected override void ParseContent(BoxReader reader, long boxEnd)
+        protected override void ParseContent(BoxReader reader)
         {
             var count = reader.ReadUInt32();
             Samples =  new List<SampleInfo>((int)count);
