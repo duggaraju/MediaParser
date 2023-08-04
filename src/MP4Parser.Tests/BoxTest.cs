@@ -32,9 +32,7 @@ namespace Media.ISO.MP4Parser.Tests
             Assert.IsNotNull(box.ExtendedType);
             Assert.AreEqual(extendedType, box.ExtendedType);
             Assert.AreEqual(0, box.Children.Count);
-        
         }
-
 
         [TestMethod]
         public void TypedBoxTest()

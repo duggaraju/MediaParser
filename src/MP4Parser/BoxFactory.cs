@@ -13,7 +13,6 @@
 //limitations under the License.
 
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -41,7 +40,7 @@ namespace Media.ISO
                 if (attribute != null)
                 {
                     var boxType = attribute.Type;
-                    Trace.TraceInformation("Declared box {0}/{1:x} Type:{2}", attribute.Type, boxType, type);
+                    Trace.TraceInformation("Declared box {0}/{1:x} Type:{2}", attribute.Type, boxType.GetBoxName(), type);
                     if (attribute.ExtendedType == null)
                     {
                         Boxes.Add(attribute.Type, type);
@@ -83,17 +82,17 @@ namespace Media.ISO
 
         public static Type GetDeclaringType(string boxName)
         {
-            Type? declaringType;
-            if (Guid.TryParse(boxName, out var guid))
-            {
-                UuidBoxes.TryGetValue(guid, out declaringType);
-            }
-            else
+            Type? declaringType = default;
+            if (boxName.Length == 4)
             {
                 Boxes.TryGetValue(boxName.GetBoxType(), out declaringType);
             }
+            else if (Guid.TryParse(boxName, out var guid))
+            {
+                UuidBoxes.TryGetValue(guid, out declaringType);
+            }
             
-            if (declaringType == null)
+            if (declaringType == default)
             {
                 declaringType = typeof(Box);
                 Trace.TraceWarning("No declared type for box {0}. Using generic Box class", boxName);
@@ -192,8 +191,7 @@ namespace Media.ISO
         /// <param name="stream"></param>
         public static void Write(this Box box, Stream stream)
         {
-            BoxWriter writer = new BoxWriter(stream);
-            box.Write(writer);
+            box.Write(new BoxWriter(stream));
         }
     }
 }

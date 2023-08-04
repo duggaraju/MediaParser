@@ -6,9 +6,7 @@ using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace CommandLine
@@ -20,6 +18,20 @@ namespace CommandLine
         {
             var extendedType = boxHeader.ExtendedType != null ? $"Guid={boxHeader.ExtendedType}" : string.Empty;
             Console.WriteLine($"Box={boxHeader.Type} {boxHeader.Type.GetBoxName()} Size={boxHeader.Size} {extendedType}");
+        }
+
+        static async Task<int> Read(Stream stream, Memory<byte> buffer)
+        {
+            var total = 0;
+            var bytes = buffer.Length;
+            while (bytes > 0 )
+            {
+                var read = await stream.ReadAsync(buffer);
+                if (read == 0) break;
+                total += read;
+                buffer = buffer.Slice(read);
+            }
+            return total;
         }
 
         static void DumpBox(Box box, int indent = 0)
@@ -44,6 +56,7 @@ namespace CommandLine
 
         static void Skip(Stream stream, int bytes)
         {
+            Console.WriteLine("Skipping {0} bytes...", bytes);
             if (stream.CanSeek)
             {
                 stream.Position += bytes;
@@ -60,70 +73,8 @@ namespace CommandLine
             }
         }
 
-        public static async Task TransMuxSmoothAsync(Stream source, Stream destination, CancellationToken cancellationToken, int? trackId = null)
+        static async Task<int> Main(string[] args)
         {
-            var pool = ArrayPool<byte>.Shared;
-            var header = new byte[8];
-            var skip = false;
-            while (true)
-            {
-                var bytes = await source.ReadAsync(header, cancellationToken);
-                if (bytes == 0) break;
-                var box = BoxFactory.Parse(header.AsSpan());
-                Console.WriteLine("Found Box {0} size {1}", box.Type.GetBoxName(), box.Size);
-                var size = (int)box.Size;
-
-                if (skip || box.Type == BoxType.MovieFragmentRandomAccessBox)
-                {
-                    Skip(source, size - 8);
-                    continue;
-                }
-
-                var memory = pool.Rent((int)box.Size);
-                var buffer = memory.AsMemory(0, size);
-                header.CopyTo(buffer);
-                await source.ReadAsync(buffer.Slice(8), cancellationToken);
-                if (box.Type == BoxType.MovieFragmentBox)
-                {
-                    skip = false;
-                    var stream = new MemoryStream(memory, writable: false);
-                    var moof = (MovieFragmentBox)BoxFactory.Parse(new BoxReader(stream));
-                    var track = moof.Tracks.Single();
-                    var theader = track.GetSingleChild<TrackFragmentHeaderBox>();
-                    if (theader.TrackId != trackId)
-                    {
-                        skip = true;
-                        continue;
-                    }
-                    var tfxd = track.GetChildren<TrackFragmentExtendedHeaderBox>().SingleOrDefault();
-                    var trun = track.GetSingleChild<TrackFragmentRunBox>();
-                    trun.Version = 1;
-                    if (tfxd != null)
-                    {
-                        var tfdt = new TrackFragmentDecodeTimeBox();
-                        tfdt.BaseMediaDecodeTime = tfxd.Time;
-                        track.Children.Remove(tfxd);
-                        track.Children.Insert(0, tfdt);
-                    }
-                    moof.ComputeSize();
-                    moof.Write(destination);
-                }
-                else if (!skip)
-                {
-                    await destination.WriteAsync(buffer, cancellationToken);
-                }
-            }
-        }
-
-        static async Task Main(string[] args)
-        {
-            var files = Directory.GetFiles(@"D:\media\", "*_2.ismv");
-            await Task.WhenAll(files.Select(async file =>
-            {
-                using var source = File.OpenRead(file);
-                using var dest = File.OpenWrite(Path.Combine(@"D:\temp\", Path.GetFileName(file)));
-                await TransMuxSmoothAsync(source, dest, default, 2);
-            }));
             var fileOption = new Option<Uri>(
                 aliases: new[] { "-i", "--input-file" },
                 description: "file to open")
@@ -146,17 +97,17 @@ namespace CommandLine
                 using var stream = await OpenUri(inputFile);
                 if (top)
                 {
-                    PrintTopLevelBoxes(stream);
+                    await PrintTopLevelBoxes(stream);
                 }
                 else
                 {
-                    PrintBoxTree(stream);
+                    await PrintBoxTree(stream);
                 }
             }, fileOption, typeOption);
 
             // Parse the incoming args and invoke the handler
             var parser = new CommandLineBuilder(rootCommand).Build();
-            await parser.InvokeAsync(args);
+            return await parser.InvokeAsync(args);
         }
 
         private static async Task<Stream> OpenUri(Uri uri)
@@ -173,7 +124,7 @@ namespace CommandLine
             }
         }
 
-        private static void PrintBoxTree(Stream stream, int indent = 0)
+        private static async Task PrintBoxTree(Stream stream, int indent = 0)
         {
             if (stream.CanSeek)
             {
@@ -184,16 +135,16 @@ namespace CommandLine
             }
             else
             {
-                PrintTopLevelBoxes(stream);
+                await PrintTopLevelBoxes(stream);
             }
         }
 
-        private static void PrintTopLevelBoxes(Stream stream)
+        private static async Task PrintTopLevelBoxes(Stream stream)
         {
-            Span<byte> boxHeader = stackalloc byte[8];
+            var boxHeader = new byte[8];
             while (true)
             {
-                var bytes = stream.Read(boxHeader);
+                var bytes = await Read(stream, boxHeader.AsMemory());
                 if (bytes == 0)
                     break;
                 var box = BoxFactory.Parse(boxHeader);

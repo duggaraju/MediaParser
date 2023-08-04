@@ -12,13 +12,13 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using Media.ISO.Boxes;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Media.ISO.Boxes;
 using System.Reflection;
-using System;
+using System.Text;
 
 namespace Media.ISO.MP4Parser.Tests
 {

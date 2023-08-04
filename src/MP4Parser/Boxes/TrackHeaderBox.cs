@@ -54,7 +54,7 @@ namespace Media.ISO.Boxes
         /// <summary>
         /// Parse the box content.
         /// </summary>
-        protected override void ParseContent(BoxReader reader)
+        protected override void ParseBoxContent(BoxReader reader)
         {
             if (Version == 1)
             {

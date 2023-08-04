@@ -26,7 +26,7 @@ namespace Media.ISO.Boxes
         /// <summary>
         /// Container boxes do not any box specific content. so helper to accidentally overriding the same.
         /// </summary>
-        protected override sealed void ParseContent(BoxReader reader)
+        protected override sealed void ParseBoxContent(BoxReader reader)
         {
             throw new ParseException("A container box should not have body");
         }

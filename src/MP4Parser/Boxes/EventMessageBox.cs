@@ -28,7 +28,7 @@ namespace Media.ISO.Boxes
             sizeof(uint) * 3 +
             (Version == 1 ? sizeof(ulong) : sizeof(uint));
 
-        protected override void ParseContent(BoxReader reader)
+        protected override void ParseBoxContent(BoxReader reader)
         {
             if (Version == 0)
             {

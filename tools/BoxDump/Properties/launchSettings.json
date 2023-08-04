@@ -2,7 +2,7 @@
   "profiles": {
     "BoxDump": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"https://provenanceuswc.blob.core.windows.net/asset-c12269e0-8409-4b6a-adf6-a512a9d0422f/bingshort_331.ismv?sv=2021-10-04&st=2023-07-18T00%3A34%3A40Z&se=2023-07-19T00%3A34%3A40Z&sr=b&sp=r&sig=3gk40fyW2umLx1ZqHHCHZhtFCOLA4Q31khdxuERKYBE%3D\""
+      "commandLineArgs": "-i D:\\media\\test\\audio.mp4"
     }
   }
 }

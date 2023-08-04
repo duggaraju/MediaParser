@@ -20,7 +20,7 @@ namespace Media.ISO
         EmsgBox = 0x656d7367,
         TrackFragmentDecodeTimeBox = 0x74666474,
         PrftBox = 0x50726674,
-        SidxBox = 0x73696478,
+        SegmentIndexBox = 0x73696478,
 
         // Fragmented MP4 file boxes.
         MovieFragmentBox = 0x6d6f6f66,

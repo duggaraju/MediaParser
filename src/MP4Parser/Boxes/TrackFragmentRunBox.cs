@@ -50,7 +50,7 @@ namespace Media.ISO.Boxes
                 ((flags & SampleCompositionOffsetPresent) != 0 ? sizeof(int) : 0);
         }
 
-        protected override void ParseContent(BoxReader reader)
+        protected override void ParseBoxContent(BoxReader reader)
         {
             var count = reader.ReadUInt32();
             Samples =  new List<SampleInfo>((int)count);

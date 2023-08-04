@@ -11,7 +11,7 @@
 
         protected override int BoxContentSize => Version == 1 ? sizeof(ulong) : sizeof(uint);
 
-        protected override void ParseContent(BoxReader reader)
+        protected override void ParseBoxContent(BoxReader reader)
         {
             BaseMediaDecodeTime = Version == 1 ? reader.ReadUInt64() : reader.ReadUInt32();
         }

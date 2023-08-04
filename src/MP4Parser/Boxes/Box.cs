@@ -107,7 +107,7 @@ namespace Media.ISO.Boxes
                 }
                 else
                 {
-                    ParseContent(reader);
+                    ParseBoxContent(reader);
                     bytes += BoxContentSize;
                 }
             }
@@ -134,7 +134,7 @@ namespace Media.ISO.Boxes
         }
 
 
-	    protected virtual void ParseContent(BoxReader reader)
+	    protected virtual void ParseBoxContent(BoxReader reader)
 	    {
 	        var boxBody = Size - HeaderSize;
             if (boxBody > 0)

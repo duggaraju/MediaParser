@@ -78,7 +78,7 @@
         {
         }
 
-        protected override void ParseContent(BoxReader reader)
+        protected override void ParseBoxContent(BoxReader reader)
         {
             TrackId = reader.ReadUInt32();
             if ((Flags & BaseDataOffsetPresent) != 0)

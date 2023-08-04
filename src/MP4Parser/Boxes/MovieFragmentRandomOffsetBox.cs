@@ -29,7 +29,7 @@ namespace Media.ISO.Boxes
 
         protected override int BoxContentSize => 4;
 
-        protected override void ParseContent(BoxReader reader)
+        protected override void ParseBoxContent(BoxReader reader)
         {
             BoxSize = reader.ReadUInt32();
         }
