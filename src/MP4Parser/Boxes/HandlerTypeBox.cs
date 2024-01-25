@@ -1,7 +1,4 @@
-﻿using System;
-using System.Text;
-
-namespace Media.ISO.Boxes
+﻿namespace Media.ISO.Boxes
 {
     [BoxType(BoxType.HandlerTypeBox)]
     public class HandlerTypeBox : Box
@@ -35,6 +32,17 @@ namespace Media.ISO.Boxes
             Reserved = reader.ReadInt32();
             ReservedMask = reader.ReadInt32();
             ComponentTypeName = reader.ReadString();
+        }
+
+        protected override void WriteBoxContent(BoxWriter writer)
+        {
+            writer.WriteInt32(VersionFlags);
+            writer.WriteInt32(ComponentType);
+            writer.WriteInt32(ComponentSubtype);
+            writer.WriteInt32(Manufacturer);
+            writer.WriteInt32(Reserved);
+            writer.WriteInt32(ReservedMask);
+            writer.WriteString(ComponentTypeName);
         }
     }
 }
