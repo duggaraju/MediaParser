@@ -140,11 +140,22 @@ namespace Media.ISO.Boxes
             if (boxBody > 0)
             {
                 Body = new byte[boxBody];
-                var bytes = reader.BaseStream.Read(Body.Span);
-                if (bytes < boxBody)
+
+                long bytesReadTotal = 0;
+                while (bytesReadTotal < boxBody)
+                {
+                    var bytes = reader.BaseStream.Read(Body.Span[(int)bytesReadTotal..(int)boxBody]);
+                    bytesReadTotal += bytes;
+                    if (bytes == 0)
+                    {
+                        break;
+                    }
+                }
+
+                if (bytesReadTotal < boxBody)
                 {
                     throw new ParseException(
-                        $"The stream is smaller than the box size. Box:{Name} Size:{Size}  Bytes read:{bytes}");
+                        $"The stream is smaller than the box size. Box:{Name} Size:{Size}  Bytes read:{bytesReadTotal}");
                 }
             }
         }
