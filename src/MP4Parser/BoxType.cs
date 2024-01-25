@@ -10,6 +10,9 @@ namespace Media.ISO
         TrackBox = 0x7472616b,
         TrackHeaderBox = 0x746b6864,
         MediaDataBox = 0x6d646174,
+        MediaBox = 0x6d646961,
+        MediaHeaderBox = 0x6d646864,
+        HandlerTypeBox = 0x68646c72,
 
         //misc boxes.
         FreeBox = 0x66726565,
