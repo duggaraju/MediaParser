@@ -58,7 +58,7 @@ namespace Media.ISO
         /// </summary>
         public static Type GetDeclaringType(BoxType type, Guid? extendedType = null)
         {
-            Type declaringType;
+            Type? declaringType;
             if (type == BoxType.UuidBox)
             {
                 if (extendedType == null || !UuidBoxes.TryGetValue(extendedType.Value, out declaringType))
@@ -107,7 +107,7 @@ namespace Media.ISO
         /// <returns></returns>
         public static IEnumerable<Box> ParseBoxes(this Stream stream)
         {
-            var reader = new BoxReader(stream);
+            using var reader = new BoxReader(stream);
             while (reader.TryParseBox(out var box))
             {
                 yield return box;
@@ -167,7 +167,7 @@ namespace Media.ISO
         /// </summary>
         public static Box Create(BoxHeader header)
         {
-            Type declaringType = GetDeclaringType(header.Type, header.ExtendedType);
+            var declaringType = GetDeclaringType(header.Type, header.ExtendedType);
             Box box;
             if (declaringType == typeof(Box))
             {
@@ -175,7 +175,7 @@ namespace Media.ISO
             }
             else
             {
-                var constructor = declaringType.GetConstructor(new Type[0]);
+                var constructor = declaringType.GetConstructor([])!;
                 var args = Array.Empty<object>();
                 box = (Box)constructor.Invoke(args);
             }

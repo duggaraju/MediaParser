@@ -16,34 +16,40 @@ using System;
 using System.Buffers.Binary;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Media.ISO
 {
     /// <summary>
     /// A utility class the extends BinaryReader and reads values in big endian format from a stream.
     /// </summary>
-    public class BoxReader
+    public class BoxReader: IDisposable, IAsyncDisposable
     {
-        public  readonly Stream BaseStream;
-        
+        private readonly Stream _innerStream;
+        private readonly BufferedStream _bufferedStream;
+
+        public Stream BaseStream => _bufferedStream;
+
         /// <summary>
         /// Construct with a given stream.
         /// </summary>
         public BoxReader(Stream stream)
         {
-            BaseStream = stream;
+            _innerStream = stream;
+            _bufferedStream = new BufferedStream(_innerStream);
         }
 
         public bool TryRead(Span<byte> buffer)
         {
-            var bytes = BaseStream.Read(buffer);
-            if (bytes == 0)
-                return false; // end of stream.
-            if (bytes < buffer.Length)
+            try
             {
-                throw new InvalidDataException("Not enough bytes");
+                _bufferedStream.ReadExactly(buffer);
+                return true;
             }
-            return true;
+            catch (EndOfStreamException)
+            {
+                return false;
+            }
         }
 
         public short ReadInt16()
@@ -134,7 +140,7 @@ namespace Media.ISO
             for (int i = 0; i < bytes; i ++)
             {
                 value <<= 8;
-                value |= (byte) BaseStream.ReadByte();
+                value |= (byte) _bufferedStream.ReadByte();
             }
 
             return value;
@@ -142,20 +148,14 @@ namespace Media.ISO
 
         public void SkipBytes(int bytesToSkip)
         {
-            if (BaseStream.CanSeek)
+            if (_bufferedStream.CanSeek)
             {
-                BaseStream.Position += bytesToSkip;
+                _bufferedStream.Position += bytesToSkip;
             }
             else
             {
                 Span<byte> buffer = stackalloc byte[Math.Min(8 * 1024, bytesToSkip)];
-                while (bytesToSkip > 0)
-                {
-                    int bytesRead = BaseStream.Read(buffer);
-                    if (bytesRead == 0)
-                        throw new EndOfStreamException();
-                    bytesToSkip -= bytesRead;
-                }
+                _bufferedStream.ReadExactly(buffer);
             }
         }
 
@@ -163,11 +163,23 @@ namespace Media.ISO
         {
             var builder = new StringBuilder();
             int c;
-            while ((c = BaseStream.ReadByte()) != 0 && c != -1)
+            while ((c = _bufferedStream.ReadByte()) != 0 && c != -1)
             {
                 builder.Append((char)c);
             }
             return builder.ToString();
+        }
+
+        public void Dispose()
+        {
+            _bufferedStream.Dispose();
+            _innerStream.Dispose();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await _bufferedStream.DisposeAsync();
+            await _innerStream.DisposeAsync();
         }
     }
 }

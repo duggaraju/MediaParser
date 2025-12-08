@@ -65,7 +65,7 @@ namespace Media.ISO
 
         public static BoxType GetBoxType<T>() where T : Box
         {
-            return typeof(T).GetCustomAttribute<BoxTypeAttribute>().Type;
+            return typeof(T).GetCustomAttribute<BoxTypeAttribute>()!.Type;
         }
 
         public static bool TryParseBox(BoxReader reader, out Box? box)

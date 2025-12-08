@@ -33,6 +33,7 @@ namespace Media.ISO.Boxes
                 Size = BinaryPrimitives.ReadInt64BigEndian(buffer);
                 buffer = buffer.Slice(8);
             }
+
             if (Type == BoxType.UuidBox && buffer.Length >= 16)
             {
                 ExtendedType = new Guid(buffer);
@@ -41,7 +42,6 @@ namespace Media.ISO.Boxes
 
         void Write(Span<byte> buffer)
         {
-
         }
     }
 
@@ -69,10 +69,10 @@ namespace Media.ISO.Boxes
 
         public Memory<byte> Body { get; set; } = Array.Empty<byte>();
 
-		public Box(BoxType type, Guid? extendedType = null)
+        public Box(BoxType type, Guid? extendedType = null)
         {
             Type = type;
-		    ExtendedType = extendedType;
+            ExtendedType = extendedType;
             Children = new List<Box>();
         }
 
@@ -84,19 +84,19 @@ namespace Media.ISO.Boxes
 
         protected Box(string boxName, Guid? extendedType = null)
             : this(boxName.GetBoxType(), extendedType)
-	    {
-	    }
+        {
+        }
 
-		public override string ToString()
+        public override string ToString()
         {
             return $"Box:{Name} Size:{Size}";
         }
 
-		internal void Parse(BoxReader reader, int depth = int.MaxValue)
+        internal void Parse(BoxReader reader, int depth = int.MaxValue)
         {
             long bytes = 0;
-		    try
-		    {
+            try
+            {
                 ParseHeader(reader);
                 bytes += HeaderSize;
 
@@ -112,17 +112,17 @@ namespace Media.ISO.Boxes
                 }
             }
             catch (Exception e)
-		    {
+            {
                 throw new ParseException(
-                    $"Failed to parse box content for box:{Name} size: {Size} bytes read:{bytes}", 
+                    $"Failed to parse box content for box:{Name} size: {Size} bytes read:{bytes}",
                     e);
-		    }
+            }
 
-		    if (bytes != Size)
-		    {
-		        throw new ParseException(
+            if (bytes != Size)
+            {
+                throw new ParseException(
                     $"Unparsed box content at the end of box: {Name} size: {Size} bytes read : {bytes}");
-		    }
+            }
         }
 
         /// <summary>
@@ -134,9 +134,9 @@ namespace Media.ISO.Boxes
         }
 
 
-	    protected virtual void ParseBoxContent(BoxReader reader)
-	    {
-	        var boxBody = Size - HeaderSize;
+        protected virtual void ParseBoxContent(BoxReader reader)
+        {
+            var boxBody = Size - HeaderSize;
             if (boxBody > 0)
             {
                 Body = new byte[boxBody];
@@ -161,7 +161,7 @@ namespace Media.ISO.Boxes
         }
 
         protected void ParseChildren(BoxReader reader, int depth = int.MaxValue)
-	    {
+        {
             long bytes = 0;
             while (bytes < Size - HeaderSize)
             {
@@ -183,7 +183,7 @@ namespace Media.ISO.Boxes
 
                 long size = value;
                 var longSize = false;
-                var type = (BoxType) reader.ReadUInt32();
+                var type = (BoxType)reader.ReadUInt32();
                 Guid? extendedType = null;
 
                 if (size == 0)
@@ -200,6 +200,7 @@ namespace Media.ISO.Boxes
                 {
                     extendedType = reader.ReadGuid();
                 }
+
                 header = new BoxHeader(size, longSize, type, extendedType);
                 return true;
             }
@@ -219,7 +220,7 @@ namespace Media.ISO.Boxes
         /// Compute the size of the box itself (without any children).
         /// </summary>
         /// <returns></returns>
-	    protected virtual int HeaderSize
+        protected virtual int HeaderSize
         {
             get
             {
@@ -256,6 +257,7 @@ namespace Media.ISO.Boxes
             {
                 size += BoxContentSize;
             }
+
             Size = size;
             return size;
         }
@@ -278,6 +280,7 @@ namespace Media.ISO.Boxes
                 bytes += BoxContentSize;
                 WriteBoxContent(writer);
             }
+
             if (bytes > Size)
             {
                 Trace.TraceError("Wrote more bytes for Box:{0} Expected:{1} Actual:{2}", Name, Size, bytes);
@@ -295,15 +298,16 @@ namespace Media.ISO.Boxes
         protected virtual void WriteBoxHeader(BoxWriter writer)
         {
             var extendedSize = false;
-	        if (Size < uint.MaxValue || _forceLongSize)
-	        {
-	            writer.WriteUInt32((uint) Size);
-	        }
-	        else
-	        {
+            if (Size < uint.MaxValue || _forceLongSize)
+            {
+                writer.WriteUInt32((uint)Size);
+            }
+            else
+            {
                 extendedSize = true;
-	            writer.WriteUInt32(1U);
-	        }
+                writer.WriteUInt32(1U);
+            }
+
             writer.WriteUInt32((uint)Type);
             if (extendedSize)
             {
@@ -311,27 +315,27 @@ namespace Media.ISO.Boxes
             }
 
             if (ExtendedType.HasValue)
-	        {
-	            writer.Write(ExtendedType.Value);
-	        }
-	    }
+            {
+                writer.Write(ExtendedType.Value);
+            }
+        }
 
         /// <summary>
         /// Writes the box contents to the writer.
         /// </summary>
-	    protected virtual void WriteBoxContent(BoxWriter writer)
-	    {
+        protected virtual void WriteBoxContent(BoxWriter writer)
+        {
             writer.BaseStream.Write(Body.Span);
-	    }
+        }
 
-	    public IEnumerable<T> GetChildren<T>() where T:Box
-	    {
-	        return Children.Where(child => child is T).Cast<T>();
-	    }
+        public IEnumerable<T> GetChildren<T>() where T : Box
+        {
+            return Children.Where(child => child is T).Cast<T>();
+        }
 
-	    public T GetSingleChild<T>() where T : Box
-	    {
-	        return GetChildren<T>().Single();
-	    }
+        public T GetSingleChild<T>() where T : Box
+        {
+            return GetChildren<T>().Single();
+        }
     }
 }
