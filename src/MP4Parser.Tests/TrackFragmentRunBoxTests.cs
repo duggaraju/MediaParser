@@ -1,11 +1,10 @@
 ﻿using Media.ISO.Boxes;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using System.Linq;
+using Xunit;
 
 namespace Media.ISO.MP4Parser.Tests
 {
-    [TestClass]
     public class TrackFragmentRunBoxTests
     {
         static byte[] Buffer =
@@ -21,40 +20,40 @@ namespace Media.ISO.MP4Parser.Tests
             0x12, 0x34, 0x56, 0x78,
         };
 
-        [TestMethod]
+        [Fact]
         public void TestDeserialize()
         {
             var stream = new MemoryStream(Buffer, writable: false);
             var reader = new BoxReader(stream);
             var box = BoxFactory.Parse<TrackFragmentRunBox>(reader);
-            Assert.IsNotNull(box);
-            Assert.AreEqual(0x24L, box.Size);
-            Assert.AreEqual(BoxType.TrackFragmentRunBox, box.Type);
-            Assert.AreEqual((byte)1, box.Version);
-            Assert.AreEqual(0x3, box.SampleCount);
-            Assert.AreNotEqual(0u, box.Flags & TrackFragmentRunBox.DataOffsetPresent);
-            Assert.AreNotEqual(0u, box.Flags & TrackFragmentRunBox.FirstSampleFlagsPresent);
-            Assert.AreNotEqual(0u, box.Flags & TrackFragmentRunBox.SampleDurationPresent);
-            Assert.AreEqual(0u, box.Flags & TrackFragmentRunBox.SampleSizePresent);
-            Assert.AreEqual(0u, box.Flags & TrackFragmentRunBox.SampleFlagsPresent);
-            Assert.AreEqual(0u, box.Flags & TrackFragmentRunBox.SampleCompositionOffsetPresent);
+            Assert.NotNull(box);
+            Assert.Equal(0x24L, box.Size);
+            Assert.Equal(BoxType.TrackFragmentRunBox, box.Type);
+            Assert.Equal((byte)1, box.Version);
+            Assert.Equal(0x3, box.SampleCount);
+            Assert.NotEqual(0u, box.Flags & TrackFragmentRunBox.DataOffsetPresent);
+            Assert.NotEqual(0u, box.Flags & TrackFragmentRunBox.FirstSampleFlagsPresent);
+            Assert.NotEqual(0u, box.Flags & TrackFragmentRunBox.SampleDurationPresent);
+            Assert.Equal(0u, box.Flags & TrackFragmentRunBox.SampleSizePresent);
+            Assert.Equal(0u, box.Flags & TrackFragmentRunBox.SampleFlagsPresent);
+            Assert.Equal(0u, box.Flags & TrackFragmentRunBox.SampleCompositionOffsetPresent);
             foreach (var sample in box.Samples)
             {
-                Assert.AreEqual(0x12345678u, sample.Duration);
-                Assert.IsNull(sample.Size);
-                Assert.IsNull(sample.Flags);
-                Assert.IsNull(sample.CompostionOffset);
+                Assert.Equal(0x12345678u, sample.Duration);
+                Assert.Null(sample.Size);
+                Assert.Null(sample.Flags);
+                Assert.Null(sample.CompositionOffset);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void TestSerialize()
         {
             var box = new TrackFragmentRunBox();
-            Assert.AreEqual(BoxType.TrackFragmentRunBox, box.Type);
-            Assert.AreEqual(0L, box.Size);
-            Assert.AreEqual((byte)0, box.Version);
-            Assert.AreEqual(0u, box.Flags);
+            Assert.Equal(BoxType.TrackFragmentRunBox, box.Type);
+            Assert.Equal(0L, box.Size);
+            Assert.Equal((byte)0, box.Version);
+            Assert.Equal(0u, box.Flags);
 
             box.Version = 1;
             box.Flags = TrackFragmentRunBox.DataOffsetPresent | TrackFragmentRunBox.FirstSampleFlagsPresent | TrackFragmentRunBox.SampleDurationPresent;
@@ -65,12 +64,12 @@ namespace Media.ISO.MP4Parser.Tests
                 Duration = 0x12345678u
             }).ToList();
             box.ComputeSize();
-            Assert.AreEqual(0x24L, box.Size);
+            Assert.Equal(0x24L, box.Size);
             var stream = new MemoryStream(32);
             box.Write(stream);
             stream.Position = 0;
-            Assert.AreEqual(box.Size, stream.Length);
-            CollectionAssert.AreEqual(Buffer, stream.ToArray());
+            Assert.Equal(box.Size, stream.Length);
+            Assert.Equal(Buffer, stream.ToArray());
         }
     }
 }

@@ -19,11 +19,6 @@ namespace Media.ISO.Boxes
     [BoxType(BoxType.MovieFragmentRandomAccessBox)]
     public class MovieFragmentRandomAccessBox : ContainerBox
     {
-        public MovieFragmentRandomAccessBox()
-            : base(BoxType.MovieFragmentRandomAccessBox)
-        {
-        }
-
         public MovieFragmentRandomOffsetBox Offset => GetChildren<MovieFragmentRandomOffsetBox>().Single();
     }
 }

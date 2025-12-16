@@ -5,10 +5,7 @@
     {
         public uint SequenceNumber { get; set; }
 
-        public MovieFragmentHeaderBox() : base(BoxType.MovieFragmentHeaderBox)
-        { }
-
-        protected override int BoxContentSize => sizeof(uint);
+        protected override int ContentSize => sizeof(uint);
 
         protected override void ParseBoxContent(BoxReader reader)
         {

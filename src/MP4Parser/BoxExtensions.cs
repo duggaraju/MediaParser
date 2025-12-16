@@ -17,6 +17,7 @@ using System;
 using System.Buffers.Binary;
 using System.Reflection;
 using System.Text;
+using System.Xml.Linq;
 
 namespace Media.ISO
 {
@@ -30,22 +31,24 @@ namespace Media.ISO
         /// </summary>
         public static BoxType GetBoxType(this string boxName)
         {
-            if(string.IsNullOrEmpty(boxName))
+            if (boxName.Length != 4)
             {
-                throw new ArgumentNullException("boxName");
+                throw new ArgumentException("Box name must be only 4 characters", paramName: nameof(boxName));
             }
-            if(boxName.Length != 4)
+            return (BoxType)FromFourCC(boxName);
+        }
+
+        public static uint FromFourCC(this ReadOnlySpan<char> fourCC)
+        {
+            if (fourCC.Length != 4)
             {
-                throw new ArgumentException("Box name must be only 4 characters", paramName: "boxName");
+                throw new ArgumentException("FourCC name must be only 4 characters", paramName: nameof(fourCC));
             }
 
             Span<byte> bytes = stackalloc byte[4];
-            Encoding.ASCII.GetBytes(boxName, bytes);
+            Encoding.ASCII.GetBytes(fourCC, bytes);
             var value = BinaryPrimitives.ReadUInt32BigEndian(bytes);
-            //if (!Enum.IsDefined(typeof(BoxType), value))
-                //throw new ArgumentException($"Undefined box type for {boxName} {value:x}", nameof(boxName));
-            return (BoxType)value;
-
+            return value;
         }
 
         /// <summary>
@@ -65,7 +68,7 @@ namespace Media.ISO
 
         public static BoxType GetBoxType<T>() where T : Box
         {
-            return typeof(T).GetCustomAttribute<BoxTypeAttribute>().Type;
+            return typeof(T).GetCustomAttribute<BoxTypeAttribute>()?.Type ?? throw new ParseException("No BoxTypeAttribute found");
         }
 
         public static bool TryParseBox(BoxReader reader, out Box? box)

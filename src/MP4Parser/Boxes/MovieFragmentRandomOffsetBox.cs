@@ -17,17 +17,12 @@ namespace Media.ISO.Boxes
     [BoxType(BoxType.MovieFragmentRandomOffsetBox)]
     public class MovieFragmentRandomOffsetBox : FullBox
     {
-        public MovieFragmentRandomOffsetBox()
-            : base(BoxType.MovieFragmentRandomOffsetBox)
-        {
-        }
-
         /// <summary>
         /// The size of the parent Random access box.
         /// </summary>
         public uint BoxSize { get; set; }
 
-        protected override int BoxContentSize => 4;
+        protected override int ContentSize => 4;
 
         protected override void ParseBoxContent(BoxReader reader)
         {

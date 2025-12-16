@@ -27,8 +27,8 @@ namespace Media.ISO
             "aff757b2-141d-80e2-e644-d542059b1d6d";
 
         public static IEnumerable<Guid> UuidBoxNames => typeof(BoxConstants).GetFields()
-            .Where(field => field.IsLiteral && field.IsPublic)
-            .Select(field => field.GetValue(null))
+            .Where(f => f.IsLiteral && f.IsPublic)
+            .Select(f => f.GetValue(null))
             .Cast<string>()
             .Select(Guid.Parse);
     }

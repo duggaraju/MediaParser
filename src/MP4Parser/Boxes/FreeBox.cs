@@ -36,7 +36,7 @@ namespace Media.ISO.Boxes
     public class SkipBox : Box
     {
         public SkipBox() : base(BoxType.SkipBox)
-        {}
+        { }
 
         public override bool CanHaveChildren => false;
 

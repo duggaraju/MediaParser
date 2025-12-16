@@ -102,12 +102,12 @@ namespace Media.ISO
         /// <param name="bytes">The size of the field in bytes (1/2/3/4).</param>
         public void WriteVariableLengthField(uint value, int bytes)
         {
-            if (bytes <1 || bytes > 4)
+            if (bytes < 1 || bytes > 4)
             {
                 throw new ArgumentException("bytes must be 1/2/3/4");
             }
 
-            for (int i = bytes - 1 ; i >= 0; --i)
+            for (int i = bytes - 1; i >= 0; --i)
             {
                 byte output = (byte)(value >> (i * 8));
                 BaseStream.WriteByte(output);
@@ -136,7 +136,7 @@ namespace Media.ISO
             else
             {
                 // Fill with 0s.
-                Span<byte> buffer = stackalloc byte[Math.Min(bytes, 16*1024)];
+                Span<byte> buffer = stackalloc byte[Math.Min(bytes, 16 * 1024)];
                 while (bytes > 0)
                 {
                     if (bytes < buffer.Length)

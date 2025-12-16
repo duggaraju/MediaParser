@@ -13,16 +13,15 @@
 //limitations under the License.
 
 using Media.ISO.Boxes;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using Xunit;
 
 namespace Media.ISO.MP4Parser.Tests
 {
-    [TestClass]
     public class BoxFactoryTest
     {
         private const string TestContent =
@@ -35,25 +34,25 @@ namespace Media.ISO.MP4Parser.Tests
 
         private const string LocalFmp4TestContent = @"BigBuckBunny_331.ismv";
 
-        [TestMethod]
+        [Fact]
         public void TestGetType()
         {
             foreach (BoxType boxType in Enum.GetValues(typeof(BoxType)))
             {
                 var boxName = boxType.GetBoxName();
                 var type = BoxFactory.GetDeclaringType(boxType);
-                Assert.IsNotNull(type);
+                Assert.NotNull(type);
                 Trace.TraceInformation("Found box {0}/{1:x} Type:{2}", boxName, boxType, type);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void TestGetUuidType()
         {
             foreach (var boxName in BoxConstants.UuidBoxNames)
             {
                 var type = BoxFactory.GetDeclaringType(BoxType.UuidBox, boxName);
-                Assert.IsNotNull(type);
+                Assert.NotNull(type);
                 var boxType = type.GetCustomAttribute<BoxTypeAttribute>();
                 if (boxType != null)
                 {
@@ -70,7 +69,7 @@ namespace Media.ISO.MP4Parser.Tests
                 indent.Append("===>");
             }
             Trace.TraceInformation("{2}Box:{0} Size:{1}", box.Name, box.Size, indent);
-            box.Children.ForEach(child => DisplayBox(child, index+1));
+            box.Children.ForEach(child => DisplayBox(child, index + 1));
         }
 
         /// <summary>
@@ -99,19 +98,19 @@ namespace Media.ISO.MP4Parser.Tests
                 outputFile,
                 newFile.Length
                 );
-            Assert.AreEqual(originalFile.Length, newFile.Length);
+            Assert.Equal(originalFile.Length, newFile.Length);
         }
 
-        [TestMethod]
+        [Fact]
         public void Mp4ParseTest()
         {
             FileParsingHelper(LocalMp4TestContent);
         }
 
-        [TestMethod]
+        [Fact]
         public void FragmentedMp4ParseTest()
         {
-            FileParsingHelper(LocalFmp4TestContent);            
+            FileParsingHelper(LocalFmp4TestContent);
         }
     }
 }

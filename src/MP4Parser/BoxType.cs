@@ -9,7 +9,28 @@ namespace Media.ISO
         MovieHeaderBox = 0x6d766864,
         TrackBox = 0x7472616b,
         TrackHeaderBox = 0x746b6864,
+
+        MediaBox = 0x6d646961,
+        MediaHeaderBox = 0x6d646864,
+        VideoMediaHeaderBox = 0x766d6864,
         MediaDataBox = 0x6d646174,
+        MediaInformationBox = 0x6D696E66,
+        DataInformationBox = 0x75756967,
+        HandlerBox = 0x68646C72,
+
+        UserDataBox = 0x75647461,
+        MetaBox = 0x6d657461,
+        MovieExtendsBox = 0x6d657874,
+        TrackExtendsBox = 0x75756965,
+        EditBox = 0x65647473,
+        EditListBox = 0x65637374,
+
+        SampleTableBox = 0x7374626c,
+        SampleDescriptionBox = 0x73747364,
+        TimeToSampleBox = 0x73747473,
+        SampleToChunkBox = 0x73746368,
+        SampleSizeBox = 0x7374737a,
+        ChunkOffsetBox = 0x7374636f,
 
         //misc boxes.
         FreeBox = 0x66726565,

@@ -34,11 +34,13 @@ namespace Media.ISO.Boxes
 
         public List<int> CompatibleBrands { get; private set; }
 
+        public override bool CanHaveChildren => false;
+
         protected override void ParseBoxContent(BoxReader reader)
         {
             MajorBrand = reader.ReadUInt32();
             MinorVersion = reader.ReadUInt32();
-            var bytes  = Size - HeaderSize - 8;
+            var bytes = Size - HeaderSize - 8;
             while (bytes > 0)
             {
                 CompatibleBrands.Add(reader.ReadInt32());
@@ -46,7 +48,7 @@ namespace Media.ISO.Boxes
             }
         }
 
-        protected override int BoxContentSize => 8 + CompatibleBrands.Count * 4;
+        protected override int ContentSize => 8 + CompatibleBrands.Count * 4;
 
         protected override void WriteBoxContent(BoxWriter writer)
         {

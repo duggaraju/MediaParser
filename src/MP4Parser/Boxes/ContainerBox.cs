@@ -17,6 +17,10 @@ namespace Media.ISO.Boxes
     // A genric container box that only has child boxes and no box specific content.
     public abstract class ContainerBox : Box
     {
+        public ContainerBox() : base()
+        {
+        }
+
         protected ContainerBox(BoxType boxType) : base(boxType)
         {
         }
@@ -26,6 +30,25 @@ namespace Media.ISO.Boxes
         /// <summary>
         /// Container boxes do not any box specific content. so helper to accidentally overriding the same.
         /// </summary>
+        protected override sealed void ParseBoxContent(BoxReader reader)
+        {
+            throw new ParseException("A container box should not have body");
+        }
+
+        protected override sealed void WriteBoxContent(BoxWriter writer)
+        {
+            throw new ParseException("A container box should not have body");
+        }
+    }
+
+    public abstract class FullContainerBox : FullBox
+    {
+        protected FullContainerBox() : base()
+        {
+        }
+
+        public override sealed bool CanHaveChildren => true;
+
         protected override sealed void ParseBoxContent(BoxReader reader)
         {
             throw new ParseException("A container box should not have body");

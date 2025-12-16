@@ -17,15 +17,8 @@ using System.Collections.Generic;
 namespace Media.ISO.Boxes
 {
     [BoxType(BoxType.MovieBox)]
-    public class MovieBox : Box
+    public class MovieBox : ContainerBox
     {
-        public MovieBox()
-            : base(BoxType.MovieBox)
-        {
-        }
-
-        public override bool CanHaveChildren => true;
-
         public IEnumerable<TrackBox> Tracks => GetChildren<TrackBox>();
     }
 }

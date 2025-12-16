@@ -1,6 +1,6 @@
 ﻿namespace Media.ISO.Boxes
 {
-    [BoxType("tfhd")]
+    [BoxType(BoxType.TrackFragmentHeaderBox)]
     public class TrackFragmentHeaderBox : FullBox
     {
         public const uint BaseDataOffsetPresent = 0x1;
@@ -15,7 +15,7 @@
         private ulong _baseDataOffset;
         private uint _sampleDescriptionIndex;
 
-        protected override int BoxContentSize =>
+        protected override int ContentSize =>
             sizeof(uint) +
             ((Flags & BaseDataOffsetPresent) == 0 ? 0 : sizeof(ulong)) +
             ((Flags & SampleDescriptionIndexPresent) == 0 ? 0 : sizeof(uint)) +
@@ -35,7 +35,7 @@
             }
         }
 
-        public ulong BaseDataOffset 
+        public ulong BaseDataOffset
         {
             get => _baseDataOffset;
             set
@@ -45,17 +45,17 @@
             }
         }
 
-        public uint DefaultSampleDuration 
+        public uint DefaultSampleDuration
         {
             get => _defaultSampleDuration;
             set
             {
                 Flags |= DefaultSampleDurationPresent;
-                _defaultSampleDuration = value; 
+                _defaultSampleDuration = value;
             }
         }
 
-        public uint DefaultSampleSize 
+        public uint DefaultSampleSize
         {
             get => _defaultSampleSize;
             set
@@ -65,17 +65,14 @@
             }
         }
 
-        public uint DefaultSampleFlags { 
-            get => _defaultSampleFlags; 
-            set 
+        public uint DefaultSampleFlags
+        {
+            get => _defaultSampleFlags;
+            set
             {
                 Flags |= DefaultSampleFlagsPresent;
                 _defaultSampleFlags = value;
             }
-        }
-
-        public TrackFragmentHeaderBox() : base("tfhd")
-        {
         }
 
         protected override void ParseBoxContent(BoxReader reader)

@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
     <OutputType>Library</OutputType>
     <RootNamespace>Media.ISO</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -11,19 +10,11 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 	<RepositoryUrl>https://github.com/duggaraju/MP4Parser</RepositoryUrl>
-    <Nullable>enable</Nullable>
     <Version>1.0.4</Version>
     <AssemblyName>Media.ISO.BMFFParser</AssemblyName>
-    <LangVersion>latest</LangVersion>
     <PackageId>Mp4.Parser</PackageId>
     <PackageTags>Media;Parser;ISO;BMFF;MP4</PackageTags>
     <Description>An ISO Base Media File Parser.</Description>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="..\..\LICENSE.txt" Link="LICENSE.txt" Package="true" PackagePath="/" />

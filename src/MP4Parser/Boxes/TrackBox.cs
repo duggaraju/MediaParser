@@ -17,11 +17,6 @@ namespace Media.ISO.Boxes
     [BoxType(BoxType.TrackBox)]
     public class TrackBox : ContainerBox
     {
-        public TrackBox()
-            : base(BoxType.TrackBox)
-        {
-        }
-
         public TrackHeaderBox Header => GetSingleChild<TrackHeaderBox>();
     }
 }

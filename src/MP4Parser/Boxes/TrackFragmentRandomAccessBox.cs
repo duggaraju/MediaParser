@@ -19,11 +19,6 @@ namespace Media.ISO.Boxes
     [BoxType(BoxType.TrackFragmentRandomAccessBox)]
     public class TrackFragmentRandomAccessBox : FullBox
     {
-        public TrackFragmentRandomAccessBox()
-            : base(BoxType.TrackFragmentRandomAccessBox)
-        {
-        }
-
         public uint TrackId { get; set; }
 
         /// <summary>
@@ -58,11 +53,11 @@ namespace Media.ISO.Boxes
         /// </summary>
         public readonly List<Entry> Entries = new List<Entry>();
 
-        protected override int BoxContentSize =>
+        protected override int ContentSize =>
             12 +
             Entries.Count * EntrySize;
 
-        private int EntrySize => 
+        private int EntrySize =>
             (Version == 1 ? 16 : 8) + SizeOfTrackFragmentNumber + SizeOfTrackRunNumber + SizeOfSampleNumber + 3;
 
         /// <summary>
@@ -74,12 +69,12 @@ namespace Media.ISO.Boxes
             _sizeOfEntry = reader.ReadInt32();
             Entries.Clear();
             Entries.Capacity = reader.ReadInt32();
-            for(int i = 0; i < Entries.Capacity; ++i)
+            for (int i = 0; i < Entries.Capacity; ++i)
             {
                 Entry entry = new Entry();
                 if (Version == 1)
                 {
-                    entry.Time= reader.ReadUInt64();
+                    entry.Time = reader.ReadUInt64();
                     entry.MoofOffset = reader.ReadUInt64();
                 }
                 else

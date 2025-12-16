@@ -3,13 +3,9 @@
     [BoxType(BoxType.TrackFragmentDecodeTimeBox)]
     public class TrackFragmentDecodeTimeBox : FullBox
     {
-        public ulong BaseMediaDecodeTime { get; set; }   
+        public ulong BaseMediaDecodeTime { get; set; }
 
-        public TrackFragmentDecodeTimeBox() : base(BoxType.TrackFragmentDecodeTimeBox)
-        {
-        }
-
-        protected override int BoxContentSize => Version == 1 ? sizeof(ulong) : sizeof(uint);
+        protected override int ContentSize => Version == 1 ? sizeof(ulong) : sizeof(uint);
 
         protected override void ParseBoxContent(BoxReader reader)
         {
@@ -25,7 +21,7 @@
             }
             else
             {
-                writer.WriteUInt32((uint) BaseMediaDecodeTime);
+                writer.WriteUInt32((uint)BaseMediaDecodeTime);
             }
         }
     }

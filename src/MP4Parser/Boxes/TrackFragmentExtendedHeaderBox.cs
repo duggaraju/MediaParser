@@ -12,12 +12,7 @@ namespace Media.ISO.Boxes
 
         public ulong Duration { get; set; }
 
-        protected override int BoxContentSize => 2 * (Version == 1 ? sizeof(ulong) : sizeof(uint));
-
-        public TrackFragmentExtendedHeaderBox() 
-            : base(BoxType.UuidBox, new Guid(BoxConstants.TrackFragmentExtendedHeaderBox))
-        {
-        }
+        protected override int ContentSize => 2 * (Version == 1 ? sizeof(ulong) : sizeof(uint));
 
         protected override void ParseBoxContent(BoxReader reader)
         {

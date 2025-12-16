@@ -13,10 +13,10 @@ namespace Media.ISO.Boxes
             private uint _flags;
             private bool isSap;
 
-            public uint ReferenceSize 
+            public uint ReferenceSize
             {
                 get => _referenceSize & FirstBitMask;
-                set => _referenceSize |= value & FirstBitMask; 
+                set => _referenceSize |= value & FirstBitMask;
             }
 
             public uint SegmentDuration { get; set; }
@@ -29,10 +29,10 @@ namespace Media.ISO.Boxes
                 set => ReferenceSize |= (value ? FirstBitMask : 0);
             }
 
-            public bool StartsWithSap 
+            public bool StartsWithSap
             {
-                get => isSap; 
-                set => isSap = value; 
+                get => isSap;
+                set => isSap = value;
             }
 
             internal void Read(BoxReader reader)
@@ -50,10 +50,6 @@ namespace Media.ISO.Boxes
             }
         }
 
-        public SegmentIndexBox() : base(BoxType.SegmentIndexBox)
-        {
-        }
-
         public List<SegmentEntry> Entries { get; set; } = new List<SegmentEntry>();
 
         public uint ReferenceId { get; set; }
@@ -64,7 +60,7 @@ namespace Media.ISO.Boxes
 
         public ulong FirstOffset { get; set; }
 
-        protected override int BoxContentSize => 
+        protected override int ContentSize =>
             2 * sizeof(uint) +
             (Version == 1 ? 2 * sizeof(ulong) : 2 * sizeof(uint)) +
             sizeof(uint) +
@@ -82,7 +78,7 @@ namespace Media.ISO.Boxes
             else
             {
                 EarliestPresentationTime = reader.ReadUInt64();
-                FirstOffset= reader.ReadUInt64();
+                FirstOffset = reader.ReadUInt64();
             }
             reader.SkipBytes(2);
             var count = reader.ReadUInt16();

@@ -1,10 +1,9 @@
 ﻿using Media.ISO.Boxes;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
+using Xunit;
 
 namespace Media.ISO.MP4Parser.Tests
 {
-    [TestClass]
     public class TrackFragmentDecodeTimeBoxTests
     {
         static byte[] Buffer =
@@ -16,37 +15,37 @@ namespace Media.ISO.MP4Parser.Tests
             0x90, 0xab, 0xcd, 0xef
         };
 
-        [TestMethod]
+        [Fact]
         public void TestDeserialize()
         {
             var stream = new MemoryStream(Buffer, writable: false);
             var reader = new BoxReader(stream);
             var box = BoxFactory.Parse<TrackFragmentDecodeTimeBox>(reader);
-            Assert.IsNotNull(box);
-            Assert.AreEqual(20L, box.Size);
-            Assert.AreEqual(BoxType.TrackFragmentDecodeTimeBox, box.Type);
-            Assert.AreEqual((byte)1, box.Version);
-            Assert.AreEqual(0x1234567890abcdefUL, box.BaseMediaDecodeTime);
+            Assert.NotNull(box);
+            Assert.Equal(20L, box.Size);
+            Assert.Equal(BoxType.TrackFragmentDecodeTimeBox, box.Type);
+            Assert.Equal((byte)1, box.Version);
+            Assert.Equal(0x1234567890abcdefUL, box.BaseMediaDecodeTime);
         }
 
-        [TestMethod]
+        [Fact]
         public void TestSerialize()
         {
             var box = new TrackFragmentDecodeTimeBox();
-            Assert.AreEqual(BoxType.TrackFragmentDecodeTimeBox, box.Type);
-            Assert.AreEqual(0L, box.Size);
-            Assert.AreEqual((byte)0, box.Version);
-            Assert.AreEqual(0u, box.Flags);
+            Assert.Equal(BoxType.TrackFragmentDecodeTimeBox, box.Type);
+            Assert.Equal(0L, box.Size);
+            Assert.Equal((byte)0, box.Version);
+            Assert.Equal(0u, box.Flags);
 
             box.BaseMediaDecodeTime = 0x1234567890abcdef;
             box.Version = (byte)1;
             box.ComputeSize();
-            Assert.AreEqual(20L, box.Size);
+            Assert.Equal(20L, box.Size);
             var stream = new MemoryStream(32);
             box.Write(stream);
             stream.Position = 0;
-            Assert.AreEqual(box.Size, stream.Length);
-            CollectionAssert.AreEqual(Buffer, stream.ToArray());
+            Assert.Equal(box.Size, stream.Length);
+            Assert.Equal(Buffer, stream.ToArray());
         }
     }
 }

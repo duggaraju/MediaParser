@@ -20,10 +20,6 @@ namespace Media.ISO.Boxes
     [BoxType(BoxType.TrackHeaderBox)]
     public class TrackHeaderBox : FullBox
     {
-        public TrackHeaderBox() : base(BoxType.TrackHeaderBox)
-        {
-        }
-
         public ulong CreationTime { get; set; }
 
         public ulong ModificationTime { get; set; }
@@ -44,7 +40,7 @@ namespace Media.ISO.Boxes
 
         public uint Height { get; set; }
 
-        protected override int BoxContentSize => 
+        protected override int ContentSize =>
             (Version == 1 ? 16 : 8) +  // creation + modification.
             8 + // trackid + reserved
             (Version == 1 ? 8 : 4) + // duration
@@ -72,7 +68,7 @@ namespace Media.ISO.Boxes
                 TrackId = reader.ReadUInt32();
                 var reserved = reader.ReadUInt32();
                 Debug.Assert(reserved == 0);
-                Duration = reader.ReadUInt32();                
+                Duration = reader.ReadUInt32();
             }
             reader.SkipBytes(8);
             Layer = reader.ReadInt16();

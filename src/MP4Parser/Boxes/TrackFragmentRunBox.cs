@@ -21,7 +21,7 @@ namespace Media.ISO.Boxes
 
             public uint? Flags { get; set; }
 
-            public int? CompostionOffset { get; set; }
+            public int? CompositionOffset { get; set; }
         }
 
         public IList<SampleInfo> Samples { get; set; } = Array.Empty<SampleInfo>();
@@ -32,18 +32,16 @@ namespace Media.ISO.Boxes
 
         public uint FirstSampleFlags { get; set; }
 
-        public TrackFragmentRunBox() : base(BoxType.TrackFragmentRunBox) { }
-
-        protected override int BoxContentSize => 
+        protected override int ContentSize =>
             sizeof(uint) +
-            ((Flags & DataOffsetPresent) != 0 ? sizeof(uint) : 0 ) +
+            ((Flags & DataOffsetPresent) != 0 ? sizeof(uint) : 0) +
             ((Flags & FirstSampleFlagsPresent) != 0 ? sizeof(uint) : 0) +
             SampleCount * GetSampleSize(Flags);
 
 
         private static int GetSampleSize(uint flags)
         {
-            return 
+            return
                 ((flags & SampleDurationPresent) != 0 ? sizeof(uint) : 0) +
                 ((flags & SampleSizePresent) != 0 ? sizeof(uint) : 0) +
                 ((flags & SampleFlagsPresent) != 0 ? sizeof(uint) : 0) +
@@ -53,8 +51,8 @@ namespace Media.ISO.Boxes
         protected override void ParseBoxContent(BoxReader reader)
         {
             var count = reader.ReadUInt32();
-            Samples =  new List<SampleInfo>((int)count);
-            if ((Flags & DataOffsetPresent)  != 0)
+            Samples = new List<SampleInfo>((int)count);
+            if ((Flags & DataOffsetPresent) != 0)
             {
                 DataOffset = reader.ReadInt32();
             }
@@ -80,7 +78,7 @@ namespace Media.ISO.Boxes
                 }
                 if ((Flags & SampleCompositionOffsetPresent) != 0)
                 {
-                    info.CompostionOffset = reader.ReadInt32();
+                    info.CompositionOffset = reader.ReadInt32();
                 }
                 Samples.Add(info);
             }
@@ -115,7 +113,7 @@ namespace Media.ISO.Boxes
                 }
                 if ((Flags & SampleCompositionOffsetPresent) != 0)
                 {
-                    writer.WriteInt32(sample.CompostionOffset ?? 0);
+                    writer.WriteInt32(sample.CompositionOffset ?? 0);
                 }
             }
         }

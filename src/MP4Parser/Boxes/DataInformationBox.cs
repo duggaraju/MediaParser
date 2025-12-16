@@ -12,26 +12,10 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
-
-namespace Media.ISO
+namespace Media.ISO.Boxes
 {
-    /// <summary>
-    /// An exception thrown for parsing errors.
-    /// </summary>
-    public class ParseException : Exception
+    [BoxType(BoxType.DataInformationBox)]
+    public class DataInformationBox : ContainerBox
     {
-        /// <summary>
-        /// Default constructor.
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="innerException"></param>
-        public ParseException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        public ParseException(string messsage) : base(messsage)
-        {
-        }
     }
 }

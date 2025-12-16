@@ -21,7 +21,11 @@ namespace Media.ISO.Boxes
     /// </summary>
     public class FullBox : Box
     {
-        public FullBox(BoxType type, Guid? extendedType = null) :
+        public FullBox(): base()
+        {
+        }
+
+        protected FullBox(BoxType type, Guid? extendedType = null) :
             base(type, extendedType)
         {
         }
@@ -48,10 +52,10 @@ namespace Media.ISO.Boxes
 
         public byte Version
         {
-            get { return (byte) (_versionAndFlags >> 24); }
+            get { return (byte)(_versionAndFlags >> 24); }
             set
             {
-                var version = (uint) value << 24;
+                var version = (uint)value << 24;
                 _versionAndFlags = version | Flags;
             }
         }
@@ -63,7 +67,7 @@ namespace Media.ISO.Boxes
             {
                 if (value > 0xFFFFFF)
                 {
-                    throw new ArgumentException("Flags cannot be greater than 0xFFFFFF", "value");
+                    throw new ArgumentException("Flags cannot be greater than 0xFFFFFF", nameof(value));
                 }
                 _versionAndFlags &= 0xFF000000;
                 _versionAndFlags |= value;

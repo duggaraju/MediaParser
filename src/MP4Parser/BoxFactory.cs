@@ -28,8 +28,8 @@ namespace Media.ISO
     /// </summary>
     public static class BoxFactory
     {
-        private static readonly Dictionary<Guid, Type> UuidBoxes = new ();
-        private static readonly Dictionary<BoxType, Type> Boxes = new ();
+        private static readonly Dictionary<Guid, Type> UuidBoxes = new();
+        private static readonly Dictionary<BoxType, Type> Boxes = new();
 
         static BoxFactory()
         {
@@ -58,7 +58,7 @@ namespace Media.ISO
         /// </summary>
         public static Type GetDeclaringType(BoxType type, Guid? extendedType = null)
         {
-            Type declaringType;
+            Type? declaringType;
             if (type == BoxType.UuidBox)
             {
                 if (extendedType == null || !UuidBoxes.TryGetValue(extendedType.Value, out declaringType))
@@ -73,7 +73,7 @@ namespace Media.ISO
 
             if (declaringType == null)
             {
-                declaringType = typeof (Box);
+                declaringType = typeof(Box);
                 Trace.TraceWarning("No declared type for box {0}/{1:x}. Using generic Box class", type.GetBoxName(), type);
             }
 
@@ -91,7 +91,7 @@ namespace Media.ISO
             {
                 UuidBoxes.TryGetValue(guid, out declaringType);
             }
-            
+
             if (declaringType == default)
             {
                 declaringType = typeof(Box);
@@ -129,10 +129,10 @@ namespace Media.ISO
 
         public static T Parse<T>(ReadOnlySpan<byte> buffer) where T : Box
         {
-            return (T) Parse(buffer);
+            return (T)Parse(buffer);
         }
 
-        public static bool TryParseBox(this BoxReader reader, [MaybeNullWhen(returnValue: false)]out Box box, int depth = int.MaxValue)
+        public static bool TryParseBox(this BoxReader reader, [MaybeNullWhen(returnValue: false)] out Box box, int depth = int.MaxValue)
         {
             var offset = reader.BaseStream.CanSeek ? reader.BaseStream.Position : 0;
             if (Box.TryParseHeader(reader, out var header))
@@ -157,9 +157,9 @@ namespace Media.ISO
             return reader.TryParseBox(out var box, depth) ? box : throw new InvalidDataException();
         }
 
-        public static T? Parse<T>(BoxReader reader) where T: Box
+        public static T? Parse<T>(BoxReader reader) where T : Box
         {
-            return (T?) Parse(reader);
+            return (T?)Parse(reader);
         }
 
         /// <summary>
@@ -175,7 +175,11 @@ namespace Media.ISO
             }
             else
             {
-                var constructor = declaringType.GetConstructor(new Type[0]);
+                var constructor = declaringType.GetConstructor([]);
+                if (constructor == null)
+                {
+                    throw new ParseException($"No parameterless constructor found for box type {declaringType}");
+                }
                 var args = Array.Empty<object>();
                 box = (Box)constructor.Invoke(args);
             }

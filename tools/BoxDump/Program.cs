@@ -3,8 +3,6 @@ using Media.ISO.Boxes;
 using System;
 using System.Buffers;
 using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Parsing;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -18,20 +16,6 @@ namespace CommandLine
         {
             var extendedType = boxHeader.ExtendedType != null ? $"Guid={boxHeader.ExtendedType}" : string.Empty;
             Console.WriteLine($"Box={boxHeader.Type} {boxHeader.Type.GetBoxName()} Size={boxHeader.Size} {extendedType}");
-        }
-
-        static async Task<int> Read(Stream stream, Memory<byte> buffer)
-        {
-            var total = 0;
-            var bytes = buffer.Length;
-            while (bytes > 0 )
-            {
-                var read = await stream.ReadAsync(buffer);
-                if (read == 0) break;
-                total += read;
-                buffer = buffer.Slice(read);
-            }
-            return total;
         }
 
         static void DumpBox(Box box, int indent = 0)
@@ -66,35 +50,47 @@ namespace CommandLine
                 var size = Math.Min(bytes, 16 * 1024);
                 using var buffer = MemoryPool<byte>.Shared.Rent(size);
 
-                while (bytes != 0)
+                while (bytes > 0)
                 {
-                    bytes -= stream.Read(buffer.Memory.Span);
+                    var toRead = Math.Min(bytes, buffer.Memory.Length);
+                    var read = stream.Read(buffer.Memory.Span.Slice(0, toRead));
+                    if (read == 0) break;
+                    bytes -= read;
                 }
             }
         }
 
         static async Task<int> Main(string[] args)
         {
-            var fileOption = new Option<Uri>(
-                aliases: new[] { "-i", "--input-file" },
-                description: "file to open")
+            var fileOption = new Option<string>("-i", "--input-file")
             {
-                IsRequired = true
+                Required = true,
+                Description = "Input MP4 file path or URL"
             };
-            
-            var typeOption = new Option<bool>(
-                aliases: new[] { "-t", "--top-level" },
-                getDefaultValue: () => false,
-                description: "only print top level boxes");
+
+            var typeOption = new Option<bool>("-t", "--top-level")
+            {
+                Required = false,
+                DefaultValueFactory = _ => false,
+                Description = "only print top level boxes"
+            };
 
             var rootCommand = new RootCommand("MP4 Box dump");
-            rootCommand.AddOption(typeOption);
-            rootCommand.AddOption(fileOption);
+            rootCommand.Options.Add(typeOption);
+            rootCommand.Options.Add(fileOption);
 
             // Note that the parameters of the handler method are matched according to the names of the options
-            rootCommand.SetHandler(async (inputFile, top) =>
+            rootCommand.SetAction(async result =>
             {
-                using var stream = await OpenUri(inputFile);
+                var inputFile = result.GetRequiredValue<string>(fileOption);
+                if (!Uri.TryCreate(inputFile, UriKind.Absolute, out var uri))
+                {
+                    inputFile = Path.GetFullPath(inputFile);
+                    uri = new Uri(inputFile);
+                }
+                var top = result.GetValue<bool>(typeOption);
+                Console.WriteLine("Processing file: {0}", uri);
+                using var stream = await OpenUri(uri);
                 if (top)
                 {
                     await PrintTopLevelBoxes(stream);
@@ -103,11 +99,11 @@ namespace CommandLine
                 {
                     await PrintBoxTree(stream);
                 }
-            }, fileOption, typeOption);
+            });
 
             // Parse the incoming args and invoke the handler
-            var parser = new CommandLineBuilder(rootCommand).Build();
-            return await parser.InvokeAsync(args);
+            var result = rootCommand.Parse(args);
+            return await result.InvokeAsync();
         }
 
         private static async Task<Stream> OpenUri(Uri uri)
@@ -119,8 +115,8 @@ namespace CommandLine
             else
             {
                 var client = new HttpClient();
-                var respone = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
-                return await respone.Content.ReadAsStreamAsync();
+                var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+                return await response.Content.ReadAsStreamAsync();
             }
         }
 
@@ -144,7 +140,7 @@ namespace CommandLine
             var boxHeader = new byte[8];
             while (true)
             {
-                var bytes = await Read(stream, boxHeader.AsMemory());
+                var bytes = await stream.ReadAtLeastAsync(boxHeader, 8, throwOnEndOfStream: false);
                 if (bytes == 0)
                     break;
                 var box = BoxFactory.Parse(boxHeader);

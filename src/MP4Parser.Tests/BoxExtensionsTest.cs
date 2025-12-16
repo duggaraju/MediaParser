@@ -1,13 +1,12 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
 using System.Diagnostics;
+using Xunit;
 
 namespace Media.ISO.MP4Parser.Tests
 {
-    [TestClass]
     public class BoxExtensionsTest
     {
-        [TestMethod]
+        [Fact]
         public void BoxNameTest()
         {
             foreach (BoxType boxType in Enum.GetValues(typeof(BoxType)))
@@ -17,22 +16,22 @@ namespace Media.ISO.MP4Parser.Tests
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void GetBoxNameTest()
         {
-            var ftyp = (BoxType) 0x66747970;
+            var ftyp = (BoxType)0x66747970;
             string name = ftyp.GetBoxName();
-            Assert.AreEqual("ftyp", name);
-            Assert.AreEqual(ftyp, name.GetBoxType());
+            Assert.Equal("ftyp", name);
+            Assert.Equal(ftyp, name.GetBoxType());
         }
 
-        [TestMethod]
+        [Fact]
         public void GetBoxTypeTest()
         {
             const string boxName = "test";
             var boxType = boxName.GetBoxType();
-            Assert.AreEqual(0x74657374U, (uint)boxType);
-            Assert.AreEqual(boxName, boxType.GetBoxName());
+            Assert.Equal(0x74657374U, (uint)boxType);
+            Assert.Equal(boxName, boxType.GetBoxName());
         }
     }
 }

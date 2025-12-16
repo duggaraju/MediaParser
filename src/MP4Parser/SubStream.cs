@@ -25,18 +25,18 @@ namespace Media.ISO
         public SubStream(Stream baseStream, long offset, long length)
         {
             if (baseStream == null)
-                throw new ArgumentNullException("baseStream");
+                throw new ArgumentNullException(nameof(baseStream));
 
             if (!baseStream.CanRead || !baseStream.CanSeek)
             {
-                throw new ArgumentException("Stream must be readable and seekable!", "baseStream");
+                throw new ArgumentException("Stream must be readable and seekable!", nameof(baseStream));
             }
 
             if (offset < 0 || offset >= baseStream.Length)
-                throw new ArgumentException("Offset cannot be negative or greater than stream length.", "offset");
-            
+                throw new ArgumentException("Offset cannot be negative or greater than stream length.", nameof(offset));
+
             if (length < 0 || offset + length > baseStream.Length)
-                throw new ArgumentException("length cannot be negative or point beyond the strem length.", "length");
+                throw new ArgumentException("length cannot be negative or point beyond the strem length.", nameof(length));
 
             _length = length;
             _offset = offset;
@@ -60,14 +60,14 @@ namespace Media.ISO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if(_offset + offset > _stream.Length)
+            if (_offset + offset > _stream.Length)
                 throw new ArgumentException("Offset out of range!", nameof(offset));
             var remaining = Length - Position;
             if (remaining <= 0)
                 return 0;
             if (remaining < count)
             {
-                count = (int) remaining;
+                count = (int)remaining;
             }
             return _stream.Read(buffer, offset, count);
         }
@@ -85,10 +85,10 @@ namespace Media.ISO
 
         public override long Length => _length;
 
-        public override long Position 
+        public override long Position
         {
             get { return _stream.Position - _offset; }
-            set { _stream.Position = _offset + value;  }
+            set { _stream.Position = _offset + value; }
         }
 
         protected override void Dispose(bool disposing)

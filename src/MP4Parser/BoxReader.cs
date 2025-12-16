@@ -24,8 +24,8 @@ namespace Media.ISO
     /// </summary>
     public class BoxReader
     {
-        public  readonly Stream BaseStream;
-        
+        public readonly Stream BaseStream;
+
         /// <summary>
         /// Construct with a given stream.
         /// </summary>
@@ -93,18 +93,18 @@ namespace Media.ISO
 
         public ushort ReadUInt16()
         {
-            return (ushort) ReadInt16();
+            return (ushort)ReadInt16();
         }
 
 
         public uint ReadUInt32()
         {
-            return TryReadInt32(out var value) ? (uint) value : throw new EndOfStreamException();
+            return TryReadInt32(out var value) ? (uint)value : throw new EndOfStreamException();
         }
 
         public ulong ReadUInt64()
         {
-            return (ulong) ReadInt64();
+            return (ulong)ReadInt64();
         }
 
         /// <summary>
@@ -131,10 +131,10 @@ namespace Media.ISO
                 throw new ArgumentException("bytes must be 1/2/3/4 only");
             }
 
-            for (int i = 0; i < bytes; i ++)
+            for (int i = 0; i < bytes; i++)
             {
                 value <<= 8;
-                value |= (byte) BaseStream.ReadByte();
+                value |= (byte)BaseStream.ReadByte();
             }
 
             return value;

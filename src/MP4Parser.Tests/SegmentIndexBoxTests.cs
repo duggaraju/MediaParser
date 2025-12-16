@@ -1,11 +1,10 @@
 ﻿using Media.ISO.Boxes;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using System.Linq;
+using Xunit;
 
 namespace Media.ISO.MP4Parser.Tests
 {
-    [TestClass]
     public class SegmentIndexBoxTests
     {
         static byte[] Buffer =
@@ -18,7 +17,7 @@ namespace Media.ISO.MP4Parser.Tests
             0x12, 0x34, 0x56, 0x78,
             0x12, 0x34, 0x56, 0x78,
             0x00, 0x00, 0x00, 0x03,
-            0x12, 0x34, 0x56, 0x78, 
+            0x12, 0x34, 0x56, 0x78,
             0x90, 0xab, 0xcd, 0xef,
             0x12, 0x34, 0x56, 0x78,
             0x12, 0x34, 0x56, 0x78,
@@ -29,40 +28,40 @@ namespace Media.ISO.MP4Parser.Tests
             0x12, 0x34, 0x56, 0x78,
         };
 
-        [TestMethod]
+        [Fact]
         public void TestDeserialize()
         {
             var stream = new MemoryStream(Buffer, writable: false);
             var reader = new BoxReader(stream);
             var box = BoxFactory.Parse<SegmentIndexBox>(reader);
-            Assert.IsNotNull(box);
-            Assert.AreEqual(0x44L, box.Size);
-            Assert.AreEqual(BoxType.SegmentIndexBox, box.Type);
-            Assert.AreEqual((byte)0, box.Version);
-            Assert.AreEqual(0u, box.Flags);
-            Assert.AreEqual(0x12345678u, box.ReferenceId);
-            Assert.AreEqual(0x12345678u, box.TimeScale);
-            Assert.AreEqual(0x12345678u, box.EarliestPresentationTime);
-            Assert.AreEqual(0x12345678u, box.FirstOffset);
-            Assert.AreEqual(0x3, box.Entries.Count);
+            Assert.NotNull(box);
+            Assert.Equal(0x44L, box.Size);
+            Assert.Equal(BoxType.SegmentIndexBox, box.Type);
+            Assert.Equal((byte)0, box.Version);
+            Assert.Equal(0u, box.Flags);
+            Assert.Equal(0x12345678u, box.ReferenceId);
+            Assert.Equal(0x12345678u, box.TimeScale);
+            Assert.Equal(0x12345678u, box.EarliestPresentationTime);
+            Assert.Equal(0x12345678u, box.FirstOffset);
+            Assert.Equal(0x3, box.Entries.Count);
             foreach (var entry in box.Entries)
             {
-                Assert.IsFalse(entry.IsSegmentIndex);
-                Assert.AreEqual(0x12345678u, entry.ReferenceSize);
-                Assert.AreEqual(0x90abcdefu, entry.SegmentDuration);
-                Assert.AreEqual(0x12345678u, entry.SapDeltaTime);
-                Assert.IsFalse(entry.StartsWithSap);
+                Assert.False(entry.IsSegmentIndex);
+                Assert.Equal(0x12345678u, entry.ReferenceSize);
+                Assert.Equal(0x90abcdefu, entry.SegmentDuration);
+                Assert.Equal(0x12345678u, entry.SapDeltaTime);
+                Assert.False(entry.StartsWithSap);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void TestSerialize()
         {
             var box = new SegmentIndexBox();
-            Assert.AreEqual(BoxType.SegmentIndexBox, box.Type);
-            Assert.AreEqual(0L, box.Size);
-            Assert.AreEqual((byte)0, box.Version);
-            Assert.AreEqual(0u, box.Flags);
+            Assert.Equal(BoxType.SegmentIndexBox, box.Type);
+            Assert.Equal(0L, box.Size);
+            Assert.Equal((byte)0, box.Version);
+            Assert.Equal(0u, box.Flags);
 
             box.TimeScale = 0x12345678;
             box.ReferenceId = 0x12345678;
@@ -75,12 +74,12 @@ namespace Media.ISO.MP4Parser.Tests
                 SapDeltaTime = 0x12345678
             }));
             box.ComputeSize();
-            Assert.AreEqual(0x44L, box.Size);
+            Assert.Equal(0x44L, box.Size);
             var stream = new MemoryStream(32);
             box.Write(stream);
             stream.Position = 0;
-            Assert.AreEqual(box.Size, stream.Length);
-            CollectionAssert.AreEqual(Buffer, stream.ToArray());
+            Assert.Equal(box.Size, stream.Length);
+            Assert.Equal(Buffer, stream.ToArray());
         }
     }
 }

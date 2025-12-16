@@ -16,7 +16,9 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 
 namespace Media.ISO.Boxes
 {
@@ -63,17 +65,25 @@ namespace Media.ISO.Boxes
         /// </summary>
         public long Size { get; set; }
 
-        public List<Box> Children { get; }
+        public List<Box> Children { get; } = new ();
 
-        public Guid? ExtendedType { get; set; }
+        public Guid? ExtendedType { get; } = null;
 
         public Memory<byte> Body { get; set; } = Array.Empty<byte>();
 
-		public Box(BoxType type, Guid? extendedType = null)
+        public Box()
+        {
+            var attr = GetType().GetCustomAttribute<BoxTypeAttribute>()  ?? throw new InvalidOperationException(
+                $"BoxType attribute is missing on box class {GetType().FullName}");
+            Type = attr.Type;
+            ExtendedType = attr.ExtendedType;
+        }
+
+
+        public Box(BoxType type, Guid? extendedType = null)
         {
             Type = type;
-		    ExtendedType = extendedType;
-            Children = new List<Box>();
+            ExtendedType = extendedType;
         }
 
         internal Box(BoxHeader header) : this(header.Type, header.ExtendedType)
@@ -84,19 +94,19 @@ namespace Media.ISO.Boxes
 
         protected Box(string boxName, Guid? extendedType = null)
             : this(boxName.GetBoxType(), extendedType)
-	    {
-	    }
+        {
+        }
 
-		public override string ToString()
+        public override string ToString()
         {
             return $"Box:{Name} Size:{Size}";
         }
 
-		internal void Parse(BoxReader reader, int depth = int.MaxValue)
+        internal void Parse(BoxReader reader, int depth = int.MaxValue)
         {
             long bytes = 0;
-		    try
-		    {
+            try
+            {
                 ParseHeader(reader);
                 bytes += HeaderSize;
 
@@ -108,21 +118,21 @@ namespace Media.ISO.Boxes
                 else
                 {
                     ParseBoxContent(reader);
-                    bytes += BoxContentSize;
+                    bytes += ContentSize;
                 }
             }
             catch (Exception e)
-		    {
+            {
                 throw new ParseException(
-                    $"Failed to parse box content for box:{Name} size: {Size} bytes read:{bytes}", 
+                    $"Failed to parse box content for box:{Name} size: {Size} bytes read:{bytes}",
                     e);
-		    }
+            }
 
-		    if (bytes != Size)
-		    {
-		        throw new ParseException(
+            if (bytes != Size)
+            {
+                throw new ParseException(
                     $"Unparsed box content at the end of box: {Name} size: {Size} bytes read : {bytes}");
-		    }
+            }
         }
 
         /// <summary>
@@ -134,9 +144,9 @@ namespace Media.ISO.Boxes
         }
 
 
-	    protected virtual void ParseBoxContent(BoxReader reader)
-	    {
-	        var boxBody = Size - HeaderSize;
+        protected virtual void ParseBoxContent(BoxReader reader)
+        {
+            var boxBody = Size - HeaderSize;
             if (boxBody > 0)
             {
                 Body = new byte[boxBody];
@@ -150,7 +160,7 @@ namespace Media.ISO.Boxes
         }
 
         protected void ParseChildren(BoxReader reader, int depth = int.MaxValue)
-	    {
+        {
             long bytes = 0;
             while (bytes < Size - HeaderSize)
             {
@@ -172,7 +182,7 @@ namespace Media.ISO.Boxes
 
                 long size = value;
                 var longSize = false;
-                var type = (BoxType) reader.ReadUInt32();
+                var type = (BoxType)reader.ReadUInt32();
                 Guid? extendedType = null;
 
                 if (size == 0)
@@ -228,7 +238,7 @@ namespace Media.ISO.Boxes
             }
         }
 
-        protected virtual int BoxContentSize => Body.Length;
+        protected virtual int ContentSize => Body.Length;
 
         /// <summary>
         /// Compute the size of the box and upadte the Size field.
@@ -243,7 +253,7 @@ namespace Media.ISO.Boxes
             }
             else
             {
-                size += BoxContentSize;
+                size += ContentSize;
             }
             Size = size;
             return size;
@@ -264,7 +274,7 @@ namespace Media.ISO.Boxes
             }
             else
             {
-                bytes += BoxContentSize;
+                bytes += ContentSize;
                 WriteBoxContent(writer);
             }
             if (bytes > Size)
@@ -284,15 +294,15 @@ namespace Media.ISO.Boxes
         protected virtual void WriteBoxHeader(BoxWriter writer)
         {
             var extendedSize = false;
-	        if (Size < uint.MaxValue || _forceLongSize)
-	        {
-	            writer.WriteUInt32((uint) Size);
-	        }
-	        else
-	        {
+            if (Size < uint.MaxValue || _forceLongSize)
+            {
+                writer.WriteUInt32((uint)Size);
+            }
+            else
+            {
                 extendedSize = true;
-	            writer.WriteUInt32(1U);
-	        }
+                writer.WriteUInt32(1U);
+            }
             writer.WriteUInt32((uint)Type);
             if (extendedSize)
             {
@@ -300,27 +310,27 @@ namespace Media.ISO.Boxes
             }
 
             if (ExtendedType.HasValue)
-	        {
-	            writer.Write(ExtendedType.Value);
-	        }
-	    }
+            {
+                writer.Write(ExtendedType.Value);
+            }
+        }
 
         /// <summary>
         /// Writes the box contents to the writer.
         /// </summary>
 	    protected virtual void WriteBoxContent(BoxWriter writer)
-	    {
+        {
             writer.BaseStream.Write(Body.Span);
-	    }
+        }
 
-	    public IEnumerable<T> GetChildren<T>() where T:Box
-	    {
-	        return Children.Where(child => child is T).Cast<T>();
-	    }
+        public IEnumerable<T> GetChildren<T>() where T : Box
+        {
+            return Children.Where(child => child is T).Cast<T>();
+        }
 
-	    public T GetSingleChild<T>() where T : Box
-	    {
-	        return GetChildren<T>().Single();
-	    }
+        public T GetSingleChild<T>() where T : Box
+        {
+            return GetChildren<T>().Single();
+        }
     }
 }

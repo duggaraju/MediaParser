@@ -18,11 +18,7 @@ namespace Media.ISO.Boxes
 
         public uint Duration { get; set; }
 
-        public EventMessageBox(): base(BoxType.EmsgBox)
-        {
-        }
-
-        protected override int BoxContentSize =>
+        protected override int ContentSize =>
             Scheme.Length + 1 +
             Value.Length + 1 +
             sizeof(uint) * 3 +

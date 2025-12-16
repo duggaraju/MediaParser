@@ -19,11 +19,6 @@ namespace Media.ISO.Boxes
     [BoxType(BoxType.MovieFragmentBox)]
     public class MovieFragmentBox : ContainerBox
     {
-        public MovieFragmentBox()
-            : base(BoxType.MovieFragmentBox)
-        {
-        }
-
         public IEnumerable<TrackFragmentBox> Tracks
         {
             get => GetChildren<TrackFragmentBox>();
