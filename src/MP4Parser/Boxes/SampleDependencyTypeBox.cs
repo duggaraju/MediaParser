@@ -1,7 +1,11 @@
-﻿namespace Media.ISO.Boxes
+﻿using System;
+
+namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.SampleDependencyTypeBox)]
-    public class SampleDependencyTypeBox : FullBox
+    [FullBox(BoxType.SampleDependencyTypeBox)]
+    public partial class SampleDependencyTypeBox : FullBox
     {
+        public byte[] SampleDependencies { get; set; } = Array.Empty<byte>();
+
     }
 }

@@ -16,8 +16,8 @@ using System.Linq;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.MovieFragmentRandomAccessBox)]
-    public class MovieFragmentRandomAccessBox : ContainerBox
+    [Container(BoxType.MovieFragmentRandomAccessBox)]
+        public partial class MovieFragmentRandomAccessBox : ContainerBox
     {
         public MovieFragmentRandomOffsetBox Offset => GetChildren<MovieFragmentRandomOffsetBox>().Single();
     }

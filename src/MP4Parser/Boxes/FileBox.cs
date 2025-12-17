@@ -17,26 +17,18 @@ using System.Linq;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.FileBox)]
-    public class FileBox : Box
+    [Box(BoxType.FileBox)]
+    public partial class FileBox : Box
     {
-        public FileBox()
-            : base(BoxType.FileBox)
-        {
-            CompatibleBrands = new List<int>();
-        }
-
         public uint MajorBrand { get; set; }
 
         public string MajorBrandName => MajorBrand.GetFourCC();
 
         public uint MinorVersion { get; set; }
 
-        public List<int> CompatibleBrands { get; private set; }
+        public List<int> CompatibleBrands { get; private set; } = new();
 
-        public override bool CanHaveChildren => false;
-
-        protected override void ParseBoxContent(BoxReader reader)
+        protected override long ParseBoxBody(BoxReader reader, int _)
         {
             MajorBrand = reader.ReadUInt32();
             MinorVersion = reader.ReadUInt32();
@@ -46,15 +38,19 @@ namespace Media.ISO.Boxes
                 CompatibleBrands.Add(reader.ReadInt32());
                 bytes -= 4;
             }
+            return ContentSize;
         }
 
-        protected override int ContentSize => 8 + CompatibleBrands.Count * 4;
+        int ContentSize => 8 + CompatibleBrands.Count * 4;
 
-        protected override void WriteBoxContent(BoxWriter writer)
+        protected override long ComputeBodySize() => ContentSize;
+
+        protected override long WriteBoxBody(BoxWriter writer)
         {
             writer.WriteUInt32(MajorBrand);
             writer.WriteUInt32(MinorVersion);
             CompatibleBrands.ForEach(writer.WriteInt32);
+            return ContentSize;
         }
 
         public override string ToString()

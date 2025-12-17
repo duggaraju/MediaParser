@@ -12,6 +12,9 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System.Collections.Generic;
+using System.Linq;
+
 namespace Media.ISO.Boxes
 {
     // A genric container box that only has child boxes and no box specific content.
@@ -25,38 +28,42 @@ namespace Media.ISO.Boxes
         {
         }
 
-        public override sealed bool CanHaveChildren => true;
-
-        /// <summary>
-        /// Container boxes do not any box specific content. so helper to accidentally overriding the same.
-        /// </summary>
-        protected override sealed void ParseBoxContent(BoxReader reader)
+        protected override sealed long ComputeBodySize()
         {
-            throw new ParseException("A container box should not have body");
+            return Children.Sum(child => child.ComputeSize());
         }
 
-        protected override sealed void WriteBoxContent(BoxWriter writer)
+
+        protected override sealed long ParseBoxBody(BoxReader reader, int depth)
         {
-            throw new ParseException("A container box should not have body");
+            long bytes = 0;
+            while (bytes < Size - HeaderSize)
+            {
+                var box = BoxFactory.Parse(reader, --depth);
+                Children.Add(box);
+                bytes += box.Size;
+            }
+
+            return bytes;
+        }
+
+        protected override long WriteBoxBody(BoxWriter writer)
+        {
+            return Children.Sum(child => child.Write(writer));
+        }
+
+        public IEnumerable<T> GetChildren<T>() where T : Box
+        {
+            return Children.Where(child => child is T).Cast<T>();
+        }
+
+        public T GetSingleChild<T>() where T : Box
+        {
+            return GetChildren<T>().Single();
         }
     }
 
-    public abstract class FullContainerBox : FullBox
+    public abstract class FullContainerBox : ContainerBox
     {
-        protected FullContainerBox() : base()
-        {
-        }
-
-        public override sealed bool CanHaveChildren => true;
-
-        protected override sealed void ParseBoxContent(BoxReader reader)
-        {
-            throw new ParseException("A container box should not have body");
-        }
-
-        protected override sealed void WriteBoxContent(BoxWriter writer)
-        {
-            throw new ParseException("A container box should not have body");
-        }
     }
 }

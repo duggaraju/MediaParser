@@ -14,7 +14,8 @@ namespace Media.ISO.MP4Parser.Tests
             const string boxName = "test";
             const long boxSize = 0x12345678abcdef;
             var type = boxName.GetBoxType();
-            var box = new Box(type) { Size = boxSize };
+            var header = new BoxHeader(type, boxSize);
+            var box = new RawBox(header);
             Assert.Equal(type, box.Type);
             Assert.Equal(boxName, box.Name);
             Assert.Equal(boxSize, box.Size);
@@ -23,7 +24,8 @@ namespace Media.ISO.MP4Parser.Tests
             Assert.Empty(box.Children);
 
             var extendedType = new Guid("7576671E-638A-48CE-AC52-F750DD11F78B");
-            box = new Box(type, extendedType) { Size = boxSize };
+            header = new BoxHeader(type, boxSize, extendedType);
+            box = new RawBox(header);
             Assert.Equal(type, box.Type);
             Assert.Equal(boxName, box.Name);
             Assert.Equal(boxSize, box.Size);
@@ -38,7 +40,6 @@ namespace Media.ISO.MP4Parser.Tests
         {
             var box = new FileBox();
             Assert.Equal("ftyp", box.Name);
-            Assert.False(box.CanHaveChildren);
             Assert.Equal(0L, box.Size);
         }
 
@@ -49,13 +50,9 @@ namespace Media.ISO.MP4Parser.Tests
             Assert.Equal(boxSize, box.Size);
             Assert.Equal(boxType, box.Type);
 
-            if (bodyLength > 0)
+            if (box is RawBox rawBox)
             {
-                Assert.Equal(bodyLength, box.Body.Length);
-            }
-            else
-            {
-                Assert.Equal(0, box.Body.Length);
+                Assert.Equal(bodyLength, rawBox.Body.Length);
             }
 
             using var output = new MemoryStream(bytes.Length);

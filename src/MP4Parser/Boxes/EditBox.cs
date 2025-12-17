@@ -1,13 +1,13 @@
 ﻿
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.EditBox)]
-    public class EditBox : ContainerBox
+    [Container(BoxType.EditBox)]
+    public partial class EditBox : ContainerBox
     {
     }
 
-    [BoxType(BoxType.EditListBox)]
-    public class EditListBox : FullContainerBox
+    [FullBox(BoxType.EditListBox)]
+    public partial class EditListBox : FullContainerBox
     {
     }
 }

@@ -3,8 +3,8 @@ using System;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.TimeToSampleBox)]
-    public class TimeToSampleBox : FullBox
+    [FullBox(BoxType.TimeToSampleBox)]
+    public partial class TimeToSampleBox : FullBox
     {
         public TimeToSampleBox() : base()
         {

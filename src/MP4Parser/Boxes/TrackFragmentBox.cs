@@ -14,8 +14,8 @@
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.TrackFragmentBox)]
-    public class TrackFragmentBox : ContainerBox
+    [Container(BoxType.TrackFragmentBox)]
+    public partial class TrackFragmentBox : ContainerBox
     {
         public TrackFragmentBox()
             : base(BoxType.TrackFragmentBox)

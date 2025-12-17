@@ -14,8 +14,8 @@
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.SampleTableBox)]
-    public class SampleTableBox : ContainerBox
+    [Container(BoxType.SampleTableBox)]
+    public partial class SampleTableBox : ContainerBox
     {
     }
 }

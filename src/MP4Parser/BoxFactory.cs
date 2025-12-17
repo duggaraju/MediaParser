@@ -36,7 +36,7 @@ namespace Media.ISO
             var assembly = Assembly.GetExecutingAssembly();
             foreach (var type in assembly.GetTypes().Where(t => t.IsSubclassOf(typeof(Box))))
             {
-                var attribute = type.GetCustomAttribute<BoxTypeAttribute>();
+                var attribute = type.GetCustomAttribute<BoxAttribute>();
                 if (attribute != null)
                 {
                     var boxType = attribute.Type;
@@ -59,12 +59,9 @@ namespace Media.ISO
         public static Type GetDeclaringType(BoxType type, Guid? extendedType = null)
         {
             Type? declaringType;
-            if (type == BoxType.UuidBox)
+            if (extendedType != null)
             {
-                if (extendedType == null || !UuidBoxes.TryGetValue(extendedType.Value, out declaringType))
-                {
-                    declaringType = typeof(Box);
-                }
+                UuidBoxes.TryGetValue(extendedType.Value, out declaringType);
             }
             else
             {
@@ -73,30 +70,10 @@ namespace Media.ISO
 
             if (declaringType == null)
             {
-                declaringType = typeof(Box);
                 Trace.TraceWarning("No declared type for box {0}/{1:x}. Using generic Box class", type.GetBoxName(), type);
+                declaringType = typeof(RawBox);
             }
 
-            return declaringType;
-        }
-
-        public static Type GetDeclaringType(string boxName)
-        {
-            Type? declaringType = default;
-            if (boxName.Length == 4)
-            {
-                Boxes.TryGetValue(boxName.GetBoxType(), out declaringType);
-            }
-            else if (Guid.TryParse(boxName, out var guid))
-            {
-                UuidBoxes.TryGetValue(guid, out declaringType);
-            }
-
-            if (declaringType == default)
-            {
-                declaringType = typeof(Box);
-                Trace.TraceWarning("No declared type for box {0}. Using generic Box class", boxName);
-            }
             return declaringType;
         }
 
@@ -137,7 +114,7 @@ namespace Media.ISO
             var offset = reader.BaseStream.CanSeek ? reader.BaseStream.Position : 0;
             if (Box.TryParseHeader(reader, out var header))
             {
-                Trace.TraceInformation("Found Box:{0} Size:{1} at Offset:{2:x}", header.Type.GetBoxName(), header.Size, offset);
+                Trace.TraceInformation("Found Box:{0} Size:{1} at Offset:{2:x}", header.Type.GetBoxName(), header.BoxSize, offset);
                 box = Create(header);
                 box.Parse(reader, depth);
                 return true;
@@ -169,9 +146,9 @@ namespace Media.ISO
         {
             Type declaringType = GetDeclaringType(header.Type, header.ExtendedType);
             Box box;
-            if (declaringType == typeof(Box))
+            if (declaringType == typeof(RawBox))
             {
-                box = new Box(header);
+                box = new RawBox(header);
             }
             else
             {
@@ -180,11 +157,10 @@ namespace Media.ISO
                 {
                     throw new ParseException($"No parameterless constructor found for box type {declaringType}");
                 }
-                var args = Array.Empty<object>();
+                object[] args = {};
                 box = (Box)constructor.Invoke(args);
+                box.SetHeader(header);
             }
-            box.Size = header.Size;
-            box._forceLongSize = header.LongSize;
             return box;
         }
 

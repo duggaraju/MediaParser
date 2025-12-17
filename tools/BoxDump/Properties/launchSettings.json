@@ -2,7 +2,7 @@
   "profiles": {
     "BoxDump": {
       "commandName": "Project",
-      "commandLineArgs": "-i D:\\media\\test\\audio.mp4"
+      "commandLineArgs": "-i D:\\media\\av1\\dash\\init-stream0.m4s"
     }
   }
 }

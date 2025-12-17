@@ -14,11 +14,8 @@
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.MediaDataBox)]
-    public class MediaDataBox : Box
+    [Box(BoxType.MediaDataBox)]
+    public partial class MediaDataBox : RawBox
     {
-        public MediaDataBox() : base(BoxType.MediaDataBox)
-        {
-        }
     }
 }

@@ -37,11 +37,14 @@ namespace Media.ISO.Boxes
         {
         }
 
+        protected sealed override long ComputeBodySize() => ContentSize;
+
         protected override int HeaderSize => base.HeaderSize + 4;
 
-        protected override void ParseHeader(BoxReader reader)
+        protected override sealed long ParseHeader(BoxReader reader)
         {
             _versionAndFlags = reader.ReadUInt32();
+            return _header.Size + 4;
         }
 
         protected override sealed void WriteBoxHeader(BoxWriter writer)
@@ -75,5 +78,29 @@ namespace Media.ISO.Boxes
         }
 
         private uint _versionAndFlags;
+
+        protected override long ParseBoxBody(BoxReader reader, int depth)
+        {
+            ParseBoxContent(reader);
+            return ContentSize;
+        }
+
+        protected override long WriteBoxBody(BoxWriter writer)
+        {
+            WriteBoxContent(writer);
+            return ContentSize;
+        }
+
+        protected virtual int ContentSize => (int) Size - HeaderSize;
+
+        protected virtual void WriteBoxContent(BoxWriter writer)
+        {
+            writer.SkipBytes(ContentSize);
+        }
+
+        protected virtual void ParseBoxContent(BoxReader reader)
+        {
+            reader.SkipBytes(ContentSize);
+        }
     }
 }

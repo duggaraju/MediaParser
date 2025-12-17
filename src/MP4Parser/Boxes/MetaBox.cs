@@ -1,8 +1,8 @@
 ﻿
 namespace Media.ISO.Boxes
 {
-    [BoxType("meta")]
-    public class MetaBox : FullBox
+    [FullBox("meta")]
+    public partial class MetaBox : FullBox
     {
     }
 }

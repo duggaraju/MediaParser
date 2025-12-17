@@ -14,6 +14,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BoxDump", "tools\BoxDump\BoxDump.csproj", "{35209ED1-AD64-4F29-BFBB-F36676A16848}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MP4Parser.SourceGenerators", "src\MP4Parser.SourceGenerators\MP4Parser.SourceGenerators.csproj", "{4390B778-3B08-4C1F-B531-EF3B35EDD7E8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,6 +34,10 @@ Global
 		{35209ED1-AD64-4F29-BFBB-F36676A16848}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{35209ED1-AD64-4F29-BFBB-F36676A16848}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{35209ED1-AD64-4F29-BFBB-F36676A16848}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4390B778-3B08-4C1F-B531-EF3B35EDD7E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4390B778-3B08-4C1F-B531-EF3B35EDD7E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4390B778-3B08-4C1F-B531-EF3B35EDD7E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4390B778-3B08-4C1F-B531-EF3B35EDD7E8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

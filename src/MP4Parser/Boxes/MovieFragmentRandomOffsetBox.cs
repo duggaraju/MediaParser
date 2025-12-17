@@ -14,8 +14,8 @@
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.MovieFragmentRandomOffsetBox)]
-    public class MovieFragmentRandomOffsetBox : FullBox
+    [FullBox(BoxType.MovieFragmentRandomOffsetBox)]
+        public partial class MovieFragmentRandomOffsetBox : FullBox
     {
         /// <summary>
         /// The size of the parent Random access box.

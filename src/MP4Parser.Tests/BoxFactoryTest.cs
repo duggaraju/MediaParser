@@ -53,7 +53,7 @@ namespace Media.ISO.MP4Parser.Tests
             {
                 var type = BoxFactory.GetDeclaringType(BoxType.UuidBox, boxName);
                 Assert.NotNull(type);
-                var boxType = type.GetCustomAttribute<BoxTypeAttribute>();
+                var boxType = type.GetCustomAttribute<BoxAttribute>();
                 if (boxType != null)
                 {
                     Trace.TraceInformation("Found box {0}/{1:x} Type:{2}", boxType.Type, boxType.ExtendedType, type);

@@ -1,7 +1,7 @@
 ﻿namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.TrackFragmentDecodeTimeBox)]
-    public class TrackFragmentDecodeTimeBox : FullBox
+    [FullBox(BoxType.TrackFragmentDecodeTimeBox)]
+    public partial class TrackFragmentDecodeTimeBox : FullBox
     {
         public ulong BaseMediaDecodeTime { get; set; }
 
@@ -14,7 +14,6 @@
 
         protected override void WriteBoxContent(BoxWriter writer)
         {
-            base.WriteBoxContent(writer);
             if (Version == 1)
             {
                 writer.WriteUInt64(BaseMediaDecodeTime);

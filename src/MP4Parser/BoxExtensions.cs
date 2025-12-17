@@ -17,7 +17,6 @@ using System;
 using System.Buffers.Binary;
 using System.Reflection;
 using System.Text;
-using System.Xml.Linq;
 
 namespace Media.ISO
 {
@@ -68,7 +67,7 @@ namespace Media.ISO
 
         public static BoxType GetBoxType<T>() where T : Box
         {
-            return typeof(T).GetCustomAttribute<BoxTypeAttribute>()?.Type ?? throw new ParseException("No BoxTypeAttribute found");
+            return typeof(T).GetCustomAttribute<BoxAttribute>()?.Type ?? throw new ParseException("No BoxTypeAttribute found");
         }
 
         public static bool TryParseBox(BoxReader reader, out Box? box)

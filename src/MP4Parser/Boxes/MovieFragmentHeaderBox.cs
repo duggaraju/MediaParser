@@ -1,7 +1,7 @@
 ﻿namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.MovieFragmentHeaderBox)]
-    public class MovieFragmentHeaderBox : FullBox
+    [FullBox(BoxType.MovieFragmentHeaderBox)]
+    public partial class MovieFragmentHeaderBox : FullBox
     {
         public uint SequenceNumber { get; set; }
 

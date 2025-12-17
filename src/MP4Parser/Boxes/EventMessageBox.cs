@@ -1,11 +1,9 @@
 ﻿
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.EmsgBox)]
-    public class EventMessageBox : FullBox
+    [FullBox(BoxType.EmsgBox)]
+    public partial class EventMessageBox : FullBox
     {
-        public override bool CanHaveChildren => false;
-
         public string Scheme { get; set; } = string.Empty;
 
         public uint Id { get; set; }

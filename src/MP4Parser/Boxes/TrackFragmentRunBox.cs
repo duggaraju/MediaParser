@@ -3,8 +3,8 @@ using System.Collections.Generic;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.TrackFragmentRunBox)]
-    public class TrackFragmentRunBox : FullBox
+    [FullBox(BoxType.TrackFragmentRunBox)]
+    public partial class TrackFragmentRunBox : FullBox
     {
         public const uint DataOffsetPresent = 0x1;
         public const uint FirstSampleFlagsPresent = 0x4;

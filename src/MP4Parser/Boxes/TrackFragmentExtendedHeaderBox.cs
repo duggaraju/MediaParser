@@ -1,10 +1,7 @@
-﻿
-using System;
-
-namespace Media.ISO.Boxes
+﻿namespace Media.ISO.Boxes
 {
-    [BoxType(BoxConstants.TrackFragmentExtendedHeaderBox)]
-    public class TrackFragmentExtendedHeaderBox : FullBox
+    [FullBox(BoxConstants.TrackFragmentExtendedHeaderBox)]
+    public partial class TrackFragmentExtendedHeaderBox : FullBox
     {
         public const string BoxGuid = "";
 
@@ -30,7 +27,6 @@ namespace Media.ISO.Boxes
 
         protected override void WriteBoxContent(BoxWriter writer)
         {
-            base.WriteBoxContent(writer);
             if (Version == 1)
             {
                 writer.WriteUInt64(Time);

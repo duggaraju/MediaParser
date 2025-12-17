@@ -16,8 +16,8 @@ using System.Collections.Generic;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.MovieBox)]
-    public class MovieBox : ContainerBox
+    [Container(BoxType.MovieBox)]
+    public partial class MovieBox : ContainerBox
     {
         public IEnumerable<TrackBox> Tracks => GetChildren<TrackBox>();
     }

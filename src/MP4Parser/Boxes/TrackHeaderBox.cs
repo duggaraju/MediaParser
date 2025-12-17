@@ -17,8 +17,8 @@ using System.Diagnostics;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.TrackHeaderBox)]
-    public class TrackHeaderBox : FullBox
+    [FullBox(BoxType.TrackHeaderBox)]
+    public partial class TrackHeaderBox : FullBox
     {
         public ulong CreationTime { get; set; }
 

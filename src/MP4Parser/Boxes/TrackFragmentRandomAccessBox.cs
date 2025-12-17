@@ -16,8 +16,8 @@ using System.Collections.Generic;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.TrackFragmentRandomAccessBox)]
-    public class TrackFragmentRandomAccessBox : FullBox
+    [FullBox(BoxType.TrackFragmentRandomAccessBox)]
+    public partial class TrackFragmentRandomAccessBox : FullBox
     {
         public uint TrackId { get; set; }
 

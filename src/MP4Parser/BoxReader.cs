@@ -41,7 +41,7 @@ namespace Media.ISO
                 return false; // end of stream.
             if (bytes < buffer.Length)
             {
-                throw new InvalidDataException("Not enough bytes");
+                throw new EndOfStreamException("Not enough bytes");
             }
             return true;
         }
@@ -87,8 +87,7 @@ namespace Media.ISO
         public long ReadInt64()
         {
             Span<byte> longValue = stackalloc byte[8];
-            TryRead(longValue);
-            return BinaryPrimitives.ReadInt64BigEndian(longValue);
+            return TryRead(longValue) ? BinaryPrimitives.ReadInt64BigEndian(longValue): throw new EndOfStreamException();
         }
 
         public ushort ReadUInt16()
@@ -169,5 +168,6 @@ namespace Media.ISO
             }
             return builder.ToString();
         }
+
     }
 }

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 
 namespace Media.ISO.Boxes
 {
-    [BoxType(BoxType.SegmentIndexBox)]
-    public class SegmentIndexBox : FullBox
+    [FullBox(BoxType.SegmentIndexBox)]
+    public partial class SegmentIndexBox : FullBox
     {
         public record struct SegmentEntry()
         {
@@ -110,7 +110,6 @@ namespace Media.ISO.Boxes
             {
                 entry.Write(writer);
             }
-            base.WriteBoxContent(writer);
         }
     }
 }

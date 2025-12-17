@@ -12,7 +12,6 @@ namespace Media.ISO.MP4Parser.Tests
             const string boxName = "abcd";
             var box = new FullBox(boxName);
             Assert.Equal(boxName, box.Name);
-            Assert.Equal(12, box.ComputeSize());
             Assert.Equal(0, box.Version);
             Assert.Equal(0u, box.Flags);
         }
