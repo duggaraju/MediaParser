@@ -1,16 +1,17 @@
-﻿using System;
-
-namespace Media.ISO.Boxes
+﻿namespace Media.ISO.Boxes
 {
     [FullBox(BoxType.MediaHeaderBox)]
-    public partial class MediaHeaderBox : FullBox
+    public partial class MediaHeaderBox
     {
+        [VersionDependentSize]
         public ulong CreationTime { get; set; }
 
+        [VersionDependentSize]
         public ulong ModificationTime { get; set; }
 
         public uint Timescale { get; set; }
 
+        [VersionDependentSize]
         public ulong Duration { get; set; }
 
         public ushort Language { get; set; }
@@ -53,47 +54,5 @@ namespace Media.ISO.Boxes
             return (ushort)encoded;
         }
 
-        protected override void ParseBoxContent(BoxReader reader)
-        {
-            if (Version == 1)
-            {
-                CreationTime = reader.ReadUInt64();
-                ModificationTime = reader.ReadUInt64();
-                Timescale = reader.ReadUInt32();
-                Duration = reader.ReadUInt64();
-            }
-            else
-            {
-                CreationTime = reader.ReadUInt32();
-                ModificationTime = reader.ReadUInt32();
-                Timescale = reader.ReadUInt32();
-                Duration = reader.ReadUInt32();
-
-            }
-            Language = reader.ReadUInt16();
-            PreDefined = reader.ReadUInt16();
-        }
-
-        protected override int ContentSize => Version == 1 ? 32: 20;
-
-        protected override void WriteBoxContent(BoxWriter writer)
-        {
-            if (Version == 1)
-            {
-                writer.WriteUInt64(CreationTime);
-                writer.WriteUInt64(ModificationTime);
-                writer.WriteUInt32(Timescale);
-                writer.WriteUInt64(Duration);
-            }
-            else
-            {
-                writer.WriteUInt32((uint)CreationTime);
-                writer.WriteUInt32((uint)ModificationTime);
-                writer.WriteUInt32(Timescale);
-                writer.WriteUInt32((uint)Duration);
-            }
-            writer.WriteUInt16(Language);
-            writer.WriteUInt16(PreDefined);
-        }
     }
 }

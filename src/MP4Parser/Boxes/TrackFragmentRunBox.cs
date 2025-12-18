@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Media.ISO.Boxes
+﻿namespace Media.ISO.Boxes
 {
     [FullBox(BoxType.TrackFragmentRunBox)]
-    public partial class TrackFragmentRunBox : FullBox
+    public partial class TrackFragmentRunBox
     {
         public const uint DataOffsetPresent = 0x1;
         public const uint FirstSampleFlagsPresent = 0x4;

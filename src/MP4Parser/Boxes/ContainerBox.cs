@@ -12,14 +12,13 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Collections.Generic;
-using System.Linq;
-
 namespace Media.ISO.Boxes
 {
     // A genric container box that only has child boxes and no box specific content.
     public abstract class ContainerBox : Box
     {
+        public List<Box> Children { get; } = new List<Box>();
+
         public ContainerBox() : base()
         {
         }
@@ -34,7 +33,7 @@ namespace Media.ISO.Boxes
         }
 
 
-        protected override sealed long ParseBoxBody(BoxReader reader, int depth)
+        protected override sealed long ParseBody(BoxReader reader, int depth)
         {
             long bytes = 0;
             while (bytes < Size - HeaderSize)
@@ -63,7 +62,4 @@ namespace Media.ISO.Boxes
         }
     }
 
-    public abstract class FullContainerBox : ContainerBox
-    {
-    }
 }

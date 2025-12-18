@@ -2,7 +2,7 @@
 namespace Media.ISO.Boxes
 {
     [FullBox(BoxType.EmsgBox)]
-    public partial class EventMessageBox : FullBox
+    public partial class EventMessageBox
     {
         public string Scheme { get; set; } = string.Empty;
 
@@ -12,15 +12,10 @@ namespace Media.ISO.Boxes
 
         public uint TimeScale { get; set; }
 
+        [VersionDependentSize]
         public ulong PresentationTime { get; set; }
 
         public uint Duration { get; set; }
-
-        protected override int ContentSize =>
-            Scheme.Length + 1 +
-            Value.Length + 1 +
-            sizeof(uint) * 3 +
-            (Version == 1 ? sizeof(ulong) : sizeof(uint));
 
         protected override void ParseBoxContent(BoxReader reader)
         {

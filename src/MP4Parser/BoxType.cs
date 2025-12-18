@@ -53,5 +53,8 @@ namespace Media.ISO
         MovieFragmentRandomAccessBox = 0x6d667261,
         TrackFragmentRandomAccessBox = 0x74667261,
         MovieFragmentRandomOffsetBox = 0x6d66726f,
+
+        // Test/support boxes.
+        ReservedFieldsBox = 0x72737662,
     }
 }

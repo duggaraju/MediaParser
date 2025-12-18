@@ -27,7 +27,7 @@ namespace Media.ISO.Boxes
             return bytes;
         }
 
-        protected override long ParseBoxBody(BoxReader reader, int _)
+        protected override long ParseBody(BoxReader reader, int _)
         {
             var bytes = Size - HeaderSize;
             reader.SkipBytes((int)bytes);

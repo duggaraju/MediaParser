@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Xunit;
 
 namespace Media.ISO.MP4Parser.Tests

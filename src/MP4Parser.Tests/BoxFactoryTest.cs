@@ -13,9 +13,7 @@
 //limitations under the License.
 
 using Media.ISO.Boxes;
-using System;
 using System.Diagnostics;
-using System.IO;
 using System.Reflection;
 using System.Text;
 using Xunit;
@@ -69,7 +67,8 @@ namespace Media.ISO.MP4Parser.Tests
                 indent.Append("===>");
             }
             Trace.TraceInformation("{2}Box:{0} Size:{1}", box.Name, box.Size, indent);
-            box.Children.ForEach(child => DisplayBox(child, index + 1));
+            if (box is ContainerBox containerBox)
+                containerBox.Children.ForEach(child => DisplayBox(child, index + 1));
         }
 
         /// <summary>

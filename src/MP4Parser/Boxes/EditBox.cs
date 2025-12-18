@@ -1,13 +1,13 @@
-﻿
-namespace Media.ISO.Boxes
+﻿namespace Media.ISO.Boxes
 {
     [Container(BoxType.EditBox)]
-    public partial class EditBox : ContainerBox
+    public partial class EditBox
     {
     }
 
     [FullBox(BoxType.EditListBox)]
-    public partial class EditListBox : FullContainerBox
+    public partial class EditListBox
     {
+        public byte[] BoxContent { get; set; } = Array.Empty<byte>();
     }
 }

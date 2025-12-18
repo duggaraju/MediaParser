@@ -1,7 +1,4 @@
-﻿
-using System;
-
-namespace Media.ISO.Boxes
+﻿namespace Media.ISO.Boxes
 {
     /// <summary>
     ///  An unknown box that contains raw data.
@@ -19,7 +16,7 @@ namespace Media.ISO.Boxes
 
         protected override long ComputeBodySize() => Body.Length;
 
-        protected override long ParseBoxBody(BoxReader reader, int _)
+        protected override long ParseBody(BoxReader reader, int _)
         {
             var boxBody = Size - HeaderSize;
             if (boxBody > 0)

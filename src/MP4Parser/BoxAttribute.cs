@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Media.ISO
+﻿namespace Media.ISO
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class BoxAttribute : Attribute
@@ -37,6 +35,7 @@ namespace Media.ISO
         }
     }
 
+    [AttributeUsage(AttributeTargets.Class)]
     public sealed class FullBoxAttribute : BoxAttribute
     {
         public FullBoxAttribute(BoxType boxType) : base(boxType)
@@ -52,6 +51,7 @@ namespace Media.ISO
         }
     }
 
+    [AttributeUsage(AttributeTargets.Class)]
     public sealed class ContainerAttribute : BoxAttribute
     {
         public ContainerAttribute(BoxType boxType) : base(boxType)
@@ -65,5 +65,38 @@ namespace Media.ISO
         public ContainerAttribute(Guid extendedType) : base(extendedType)
         {
         }
+    }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    public sealed class VersionDependentSizeAttribute : Attribute
+    {
+        public VersionDependentSizeAttribute(int versionThreshold = 1)
+        {
+            VersionThreshold = versionThreshold;
+        }
+
+        public int VersionThreshold { get; }
+    }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    public sealed class FlagOptionalAttribute : Attribute
+    {
+        public FlagOptionalAttribute(uint flagMask)
+        {
+            FlagMask = flagMask;
+        }
+
+        public uint FlagMask { get; }
+    }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    public sealed class ReservedAttribute : Attribute
+    {
+        public ReservedAttribute(int byteCount)
+        {
+            ByteCount = byteCount;
+        }
+
+        public int ByteCount { get; }
     }
 }

@@ -1,7 +1,7 @@
 ﻿namespace Media.ISO.Boxes
 {
     [FullBox(BoxType.TrackFragmentHeaderBox)]
-    public partial class TrackFragmentHeaderBox : FullBox
+    public partial class TrackFragmentHeaderBox
     {
         public const uint BaseDataOffsetPresent = 0x1;
         public const uint SampleDescriptionIndexPresent = 0x2;

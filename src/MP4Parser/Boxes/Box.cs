@@ -12,9 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -22,9 +20,15 @@ namespace Media.ISO.Boxes
 {
     public record struct BoxHeader(BoxType Type, long BoxSize = 0, Guid? ExtendedType = null, bool LongSize = false)
     {
+        public BoxHeader(BoxAttribute attr) : this(attr.Type, 0, attr.ExtendedType)
+        {
+        }
+
         public string Name => Type.GetBoxName();
 
-        public int Size => 8 + (LongSize ? 8 : 0) + (ExtendedType == null ? 0 : 16);
+        public string Description => Type.ToString();
+
+        public int Size => sizeof(uint) + sizeof(uint) + (LongSize ? sizeof(long) : 0) + (ExtendedType == null ? 0 : 16);
 
         public void Parse(BoxReader reader)
         {
@@ -107,6 +111,41 @@ namespace Media.ISO.Boxes
             header.ExtendedType = new Guid(buffer);
             return true;
         }
+
+        public static bool TryParse(BoxReader reader, out BoxHeader header)
+        {
+            header = default;
+            try
+            {
+                if (!reader.TryReadUInt32(out var value))
+                {
+                    return false;
+                }
+
+                if (value == 0)
+                {
+                    throw new ArgumentException("Box with size 0 is not supported!");
+                }
+
+                header.BoxSize = (long)value;
+                header.Type = (BoxType)reader.ReadUInt32();
+                if (value == 1)
+                {
+                    header.LongSize = true;
+                    header.BoxSize = reader.ReadInt64();
+                }
+
+                if (header.Type == BoxType.UuidBox)
+                {
+                    header.ExtendedType = reader.ReadGuid();
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                throw new ParseException($"Failed to parse box {header}!", e);
+            }
+        }
     }
 
     /// <summary>
@@ -129,14 +168,11 @@ namespace Media.ISO.Boxes
 
         public Guid? ExtendedType => _header.ExtendedType;
 
-        public List<Box> Children { get; } = new ();
-
         public Box()
         {
-            var attr = GetType().GetCustomAttribute<BoxAttribute>()  ?? throw new InvalidOperationException(
+            var attr = GetType().GetCustomAttribute<BoxAttribute>() ?? throw new InvalidOperationException(
                 $"BoxType attribute is missing on box class {GetType().FullName}");
-            _header.Type = attr.Type;
-            _header.ExtendedType = attr.ExtendedType;
+            _header = new BoxHeader(attr);
         }
 
 
@@ -172,7 +208,7 @@ namespace Media.ISO.Boxes
             try
             {
                 bytes += ParseHeader(reader);
-                bytes += ParseBoxBody(reader, depth);
+                bytes += ParseBody(reader, depth);
             }
             catch (Exception e)
             {
@@ -188,10 +224,10 @@ namespace Media.ISO.Boxes
             }
         }
 
-        protected abstract long ParseBoxBody(BoxReader reader, int depth);
+        protected abstract long ParseBody(BoxReader reader, int depth);
 
         /// <summary>
-        /// Parse the box header. 
+        /// Parse the box header.
         /// </summary>
         protected virtual long ParseHeader(BoxReader reader)
         {
@@ -199,49 +235,10 @@ namespace Media.ISO.Boxes
             return _header.Size;
         }
 
-
-        public static bool TryParseHeader(BoxReader reader, out BoxHeader header)
-        {
-            try
-            {
-                if (!reader.TryReadUInt32(out var value))
-                {
-                    header = default;
-                    return false;
-                }
-
-                long size = value;
-                var longSize = false;
-                var type = (BoxType)reader.ReadUInt32();
-                Guid? extendedType = null;
-
-                if (size == 0)
-                {
-                    throw new ArgumentException("Box with size 0 is not supported!");
-                }
-                else if (size == 1)
-                {
-                    longSize = true;
-                    size = reader.ReadInt64();
-                }
-
-                if (type == BoxType.UuidBox)
-                {
-                    extendedType = reader.ReadGuid();
-                }
-                header = new BoxHeader(type, size, extendedType, longSize);
-                return true;
-            }
-            catch (Exception e)
-            {
-                throw new ParseException("Failed to parse box details!", e);
-            }
-        }
-
         /// <summary>
         /// Get the name of the box in a printer friendly string.
         /// </summary>
-        public string Name => Type.GetBoxName();
+        public string Name => _header.Name;
 
 
         /// <summary>
@@ -271,14 +268,11 @@ namespace Media.ISO.Boxes
             long bytes = HeaderSize;
             WriteBoxHeader(writer);
             bytes += WriteBoxBody(writer);
-            if (bytes > Size)
+            if (bytes != Size)
             {
-                Trace.TraceError("Wrote more bytes for Box:{0} Expected:{1} Actual:{2}", Name, Size, bytes);
+                Trace.TraceError("Wrote different bytes for Box:{0} Expected:{1} Actual:{2}", Name, Size, bytes);
                 throw new ParseException(
-                    string.Format(
-                        "Serialization wrote more bytes than the size of the box! Exptected:{0} Actual:{1}",
-                        Size,
-                        bytes));
+                    $"Serialization wrote more bytes than the size of the box {Name}! Exptected:{Size} Actual:{bytes}");
             }
 
             Trace.TraceInformation("Writing Box: '{0}' Size: {1}", Name, Size);

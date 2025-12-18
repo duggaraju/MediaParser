@@ -12,21 +12,29 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 using System.Diagnostics;
 
 namespace Media.ISO.Boxes
 {
     [FullBox(BoxType.TrackHeaderBox)]
-    public partial class TrackHeaderBox : FullBox
+    public partial class TrackHeaderBox
     {
+        [VersionDependentSize]
         public ulong CreationTime { get; set; }
 
+        [VersionDependentSize]
         public ulong ModificationTime { get; set; }
 
         public uint TrackId { get; set; }
 
+        [Reserved(4)]
+        private byte Reserverd1 { get; set; }
+
+        [VersionDependentSize]
         public ulong Duration { get; set; }
+
+        [Reserved(8)]
+        private byte Reserved2 { get; set; }
 
         public short Layer { get; set; }
 
@@ -34,81 +42,14 @@ namespace Media.ISO.Boxes
 
         public short Volume { get; set; }
 
-        public readonly int[] Matrix = new int[9];
+        [Reserved(2)]
+        private byte Reserved3 { get; set; }
+
+        public uint[] Matrix { get; } = new uint[9];
 
         public uint Width { get; set; }
 
         public uint Height { get; set; }
 
-        protected override int ContentSize =>
-            (Version == 1 ? 16 : 8) +  // creation + modification.
-            8 + // trackid + reserved
-            (Version == 1 ? 8 : 4) + // duration
-            24 +
-            Matrix.Length * 4;
-
-        /// <summary>
-        /// Parse the box content.
-        /// </summary>
-        protected override void ParseBoxContent(BoxReader reader)
-        {
-            if (Version == 1)
-            {
-                CreationTime = reader.ReadUInt64();
-                ModificationTime = reader.ReadUInt64();
-                TrackId = reader.ReadUInt32();
-                var reserved = reader.ReadUInt32();
-                Debug.Assert(reserved == 0);
-                Duration = reader.ReadUInt64();
-            }
-            else
-            {
-                CreationTime = reader.ReadUInt32();
-                ModificationTime = reader.ReadUInt32();
-                TrackId = reader.ReadUInt32();
-                var reserved = reader.ReadUInt32();
-                Debug.Assert(reserved == 0);
-                Duration = reader.ReadUInt32();
-            }
-            reader.SkipBytes(8);
-            Layer = reader.ReadInt16();
-            AlternateGroup = reader.ReadInt16();
-            Volume = reader.ReadInt16();
-            reader.SkipBytes(2);
-            for (int i = 0; i < Matrix.Length; ++i)
-            {
-                Matrix[i] = reader.ReadInt32();
-            }
-            Width = reader.ReadUInt32();
-            Height = reader.ReadUInt32();
-        }
-
-        protected override void WriteBoxContent(BoxWriter writer)
-        {
-            if (Version == 1)
-            {
-                writer.WriteUInt64(CreationTime);
-                writer.WriteUInt64(ModificationTime);
-                writer.WriteUInt32(TrackId);
-                writer.WriteUInt32(0);
-                writer.WriteUInt64(Duration);
-            }
-            else
-            {
-                writer.WriteUInt32((uint)CreationTime);
-                writer.WriteUInt32((uint)ModificationTime);
-                writer.WriteUInt32(TrackId);
-                writer.WriteUInt32(0);
-                writer.WriteUInt32((uint)Duration);
-            }
-            writer.SkipBytes(8);
-            writer.WriteInt16(Layer);
-            writer.WriteInt16(AlternateGroup);
-            writer.WriteInt16(Volume);
-            writer.SkipBytes(2);
-            Array.ForEach(Matrix, writer.WriteInt32);
-            writer.WriteUInt32(Width);
-            writer.WriteUInt32(Height);
-        }
     }
 }

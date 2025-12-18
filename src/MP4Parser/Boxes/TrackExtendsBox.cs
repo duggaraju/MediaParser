@@ -15,7 +15,7 @@
 namespace Media.ISO.Boxes
 {
     [FullBox(BoxType.TrackExtendsBox)]
-    public partial class TrackExtendsBox : FullBox
+    public partial class TrackExtendsBox
     {
         public int TrackId { get; set; }
 

@@ -1,6 +1,4 @@
 ﻿using Media.ISO.Boxes;
-using System;
-using System.IO;
 using Xunit;
 
 namespace Media.ISO.MP4Parser.Tests

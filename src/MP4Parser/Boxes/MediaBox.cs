@@ -15,7 +15,7 @@
 namespace Media.ISO.Boxes
 {
     [Container(BoxType.MediaBox)]
-    public partial class MediaBox : ContainerBox
+    public partial class MediaBox
     {
     }
 }

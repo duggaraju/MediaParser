@@ -12,12 +12,8 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using Media.ISO.Boxes;
 
@@ -112,7 +108,7 @@ namespace Media.ISO
         public static bool TryParseBox(this BoxReader reader, [MaybeNullWhen(returnValue: false)] out Box box, int depth = int.MaxValue)
         {
             var offset = reader.BaseStream.CanSeek ? reader.BaseStream.Position : 0;
-            if (Box.TryParseHeader(reader, out var header))
+            if (BoxHeader.TryParse(reader, out var header))
             {
                 Trace.TraceInformation("Found Box:{0} Size:{1} at Offset:{2:x}", header.Type.GetBoxName(), header.BoxSize, offset);
                 box = Create(header);
@@ -124,7 +120,7 @@ namespace Media.ISO
         }
 
         /// <summary>
-        /// Parses a single box from the stream 
+        /// Parses a single box from the stream
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="depth"></param>
@@ -157,7 +153,7 @@ namespace Media.ISO
                 {
                     throw new ParseException($"No parameterless constructor found for box type {declaringType}");
                 }
-                object[] args = {};
+                object[] args = { };
                 box = (Box)constructor.Invoke(args);
                 box.SetHeader(header);
             }

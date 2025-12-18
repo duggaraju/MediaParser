@@ -13,7 +13,6 @@
 //limitations under the License.
 
 using Media.ISO.Boxes;
-using System;
 using System.Buffers.Binary;
 using System.Reflection;
 using System.Text;
@@ -72,11 +71,13 @@ namespace Media.ISO
 
         public static bool TryParseBox(BoxReader reader, out Box? box)
         {
-            if (Box.TryParseHeader(reader, out var header))
+            if (BoxHeader.TryParse(reader, out var header))
             {
                 box = BoxFactory.Create(header);
+                box.Parse(reader);
                 return true;
             }
+
             box = default;
             return false;
         }

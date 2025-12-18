@@ -12,12 +12,10 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Linq;
-
 namespace Media.ISO.Boxes
 {
     [Container(BoxType.MovieFragmentRandomAccessBox)]
-        public partial class MovieFragmentRandomAccessBox : ContainerBox
+    public partial class MovieFragmentRandomAccessBox
     {
         public MovieFragmentRandomOffsetBox Offset => GetChildren<MovieFragmentRandomOffsetBox>().Single();
     }

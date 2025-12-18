@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using Media.ISO.Boxes;
+﻿using Media.ISO.Boxes;
 using Xunit;
 
 namespace Media.ISO.MP4Parser.Tests
@@ -21,7 +18,6 @@ namespace Media.ISO.MP4Parser.Tests
             Assert.Equal(boxSize, box.Size);
             Assert.Equal(string.Format("Box:{0} Size:{1}", boxName, boxSize), box.ToString());
             Assert.Null(box.ExtendedType);
-            Assert.Empty(box.Children);
 
             var extendedType = new Guid("7576671E-638A-48CE-AC52-F750DD11F78B");
             header = new BoxHeader(type, boxSize, extendedType);
@@ -32,7 +28,6 @@ namespace Media.ISO.MP4Parser.Tests
             Assert.Equal(string.Format("Box:{0} Size:{1}", boxName, boxSize), box.ToString());
             Assert.NotNull(box.ExtendedType);
             Assert.Equal(extendedType, box.ExtendedType);
-            Assert.Empty(box.Children);
         }
 
         [Fact]

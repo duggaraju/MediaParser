@@ -15,7 +15,7 @@
 namespace Media.ISO.Boxes
 {
     [Container(BoxType.MovieExtendsBox)]
-    public class MovieExtendsBox : ContainerBox
+    public partial class MovieExtendsBox
     {
     }
 }

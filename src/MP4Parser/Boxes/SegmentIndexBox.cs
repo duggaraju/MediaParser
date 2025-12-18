@@ -1,10 +1,7 @@
-﻿
-using System.Collections.Generic;
-
-namespace Media.ISO.Boxes
+﻿namespace Media.ISO.Boxes
 {
     [FullBox(BoxType.SegmentIndexBox)]
-    public partial class SegmentIndexBox : FullBox
+    public partial class SegmentIndexBox
     {
         public record struct SegmentEntry()
         {

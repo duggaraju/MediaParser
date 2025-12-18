@@ -12,8 +12,8 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -87,7 +87,7 @@ namespace Media.ISO
         public long ReadInt64()
         {
             Span<byte> longValue = stackalloc byte[8];
-            return TryRead(longValue) ? BinaryPrimitives.ReadInt64BigEndian(longValue): throw new EndOfStreamException();
+            return TryRead(longValue) ? BinaryPrimitives.ReadInt64BigEndian(longValue) : throw new EndOfStreamException();
         }
 
         public ushort ReadUInt16()
@@ -112,7 +112,7 @@ namespace Media.ISO
         public Guid ReadGuid()
         {
             Span<byte> array = stackalloc byte[16];
-            TryRead(array);
+            if (!TryRead(array)) throw new EndOfStreamException();
             array.Reverse();
             return new Guid(array);
         }
@@ -158,15 +158,61 @@ namespace Media.ISO
             }
         }
 
-        public string ReadString()
+        public string ReadString(int length = -1)
         {
-            var builder = new StringBuilder();
-            int c;
-            while ((c = BaseStream.ReadByte()) != 0 && c != -1)
+            if (length < 0)
             {
-                builder.Append((char)c);
+                var bytes = new List<byte>();
+                int value;
+                while ((value = BaseStream.ReadByte()) != -1)
+                {
+                    if (value == 0)
+                    {
+                        break;
+                    }
+
+                    bytes.Add((byte)value);
+                }
+
+                return bytes.Count == 0 ? string.Empty : Encoding.UTF8.GetString(bytes.ToArray());
             }
-            return builder.ToString();
+
+            if (length == 0)
+            {
+                return string.Empty;
+            }
+
+            Span<byte> buffer = stackalloc byte[length];
+            BaseStream.ReadExactly(buffer);
+
+            int end = length;
+            if (buffer[end - 1] == 0)
+            {
+                end--;
+            }
+
+            int start = 0;
+            bool nullTerminated = end < length;
+            if (!nullTerminated)
+            {
+                start = Math.Min(1, end);
+            }
+
+            int count = Math.Max(0, end - start);
+            if (count == 0)
+            {
+                return string.Empty;
+            }
+
+            return Encoding.UTF8.GetString(buffer.Slice(start, count));
+        }
+
+        public void Read(Span<byte> buffer)
+        {
+            if (!TryRead(buffer))
+            {
+                throw new EndOfStreamException();
+            }
         }
 
     }

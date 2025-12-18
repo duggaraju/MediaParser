@@ -12,12 +12,10 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Collections.Generic;
-
 namespace Media.ISO.Boxes
 {
     [FullBox(BoxType.TrackFragmentRandomAccessBox)]
-    public partial class TrackFragmentRandomAccessBox : FullBox
+    public partial class TrackFragmentRandomAccessBox
     {
         public uint TrackId { get; set; }
 
@@ -29,23 +27,47 @@ namespace Media.ISO.Boxes
             /// <summary>
             /// Timestamp of the first sample in moof.
             /// </summary>
+            [VersionDependentSize]
             public ulong Time { get; set; }
+
             /// <summary>
             /// Offset of moof in the file.
             /// </summary>
+            [VersionDependentSize]
             public ulong MoofOffset { get; set; }
+
             /// <summary>
             /// The track fragment number in the moof.
             /// </summary>
             public uint TrackFragmentNumber { get; set; }
+
             /// <summary>
             /// The Track Run number in the moof.
             /// </summary>
             public uint TrackRunNumber { get; set; }
+
             /// <summary>
             /// Sample number in the track run that is the random access point.
             /// </summary>
             public uint SampleNumber { get; set; }
+
+            public void Write(BoxWriter writer)
+            {
+                writer.WriteUInt64(Time);
+                writer.WriteUInt64(MoofOffset);
+                writer.WriteVariableLengthField(TrackFragmentNumber, 1);
+                writer.WriteVariableLengthField(TrackRunNumber, 1);
+                writer.WriteVariableLengthField(SampleNumber, 1);
+            }
+
+            public void Read(BoxReader reader)
+            {
+                Time = reader.ReadUInt64();
+                MoofOffset = reader.ReadUInt64();
+                TrackFragmentNumber = reader.ReadVariableLengthField(1);
+                TrackRunNumber = reader.ReadVariableLengthField(1);
+                SampleNumber = reader.ReadVariableLengthField(1);
+            }
         }
 
         /// <summary>

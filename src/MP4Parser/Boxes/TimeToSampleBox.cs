@@ -1,42 +1,46 @@
-﻿
-using System;
+﻿using System.Formats.Asn1;
 
 namespace Media.ISO.Boxes
 {
     [FullBox(BoxType.TimeToSampleBox)]
-    public partial class TimeToSampleBox : FullBox
+    public partial class TimeToSampleBox
     {
-        public TimeToSampleBox() : base()
+        public record struct Entry(uint SampleCount, uint SampleDelta)
         {
+            public void Read(BoxReader reader)
+            {
+                SampleCount = reader.ReadUInt32();
+                SampleDelta = reader.ReadUInt32();
+            }
+
+            public void Write(BoxWriter writer)
+            {
+                writer.WriteUInt32(SampleCount);
+                writer.WriteUInt32(SampleDelta);
+            }
         }
 
-        public uint[] SampleCounts { get; set; } = Array.Empty<uint>();
-
-        public uint[] SampleDeltas { get; set; } = Array.Empty<uint>();
+        public List<Entry> Entries { get; set; } = new();
 
         protected override void ParseBoxContent(BoxReader reader)
         {
             var count = reader.ReadUInt32();
-            SampleCounts = new uint[count];
-            SampleDeltas = new uint[count];
             for (var i = 0; i < count; i++)
             {
-                var sampleCount = reader.ReadUInt32();
-                var sampleDelta = reader.ReadUInt32();
-                SampleCounts[i] = sampleCount;
-                SampleDeltas[i] = sampleDelta;
+                var entry = new Entry();
+                entry.Read(reader);
+                Entries.Add(entry);
             }
         }
 
-        protected override int ContentSize => 4 + SampleCounts.Length * 8;
+        protected override int ContentSize => 4 + Entries.Count * 8;
 
         protected override void WriteBoxContent(BoxWriter writer)
         {
-            writer.WriteUInt32((uint)SampleCounts.Length);
-            for (var i = 0; i < SampleCounts.Length; i++)
+            writer.WriteUInt32((uint) Entries.Count);
+            foreach(var entry in Entries)
             {
-                writer.WriteUInt32(SampleCounts[i]);
-                writer.WriteUInt32(SampleDeltas[i]);
+                entry.Write(writer);
             }
         }
     }

@@ -1,11 +1,7 @@
 ﻿using Media.ISO;
 using Media.ISO.Boxes;
-using System;
 using System.Buffers;
 using System.CommandLine;
-using System.IO;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace CommandLine
 {
@@ -22,7 +18,7 @@ namespace CommandLine
         {
             var prefix = new String(' ', indent * 2);
             var extendedType = box.ExtendedType != null ? $"Guid={box.ExtendedType}" : string.Empty;
-            Console.WriteLine($"{prefix}Box={box.Name} Size={box.Size} {extendedType} children={box.Children.Count}");
+            Console.WriteLine($"{prefix}Box={box.Name} Size={box.Size} {extendedType} children={(box is ContainerBox c ? c.Children.Count : 0)}");
             if (box is TrackFragmentExtendedHeaderBox tfxd)
             {
                 Console.WriteLine($"  {prefix}Time={tfxd.Time} Duration={tfxd.Duration}");
@@ -31,9 +27,9 @@ namespace CommandLine
             {
                 Console.WriteLine($"  {prefix}Time={tfdt.BaseMediaDecodeTime}");
             }
-            else
+            else if (box is ContainerBox container)
             {
-                foreach (var child in box.Children)
+                foreach (var child in container.Children)
                     DumpBox(child, indent + 1);
             }
         }

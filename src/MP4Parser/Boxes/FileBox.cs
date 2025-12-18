@@ -12,9 +12,6 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Collections.Generic;
-using System.Linq;
-
 namespace Media.ISO.Boxes
 {
     [Box(BoxType.FileBox)]
@@ -26,16 +23,16 @@ namespace Media.ISO.Boxes
 
         public uint MinorVersion { get; set; }
 
-        public List<int> CompatibleBrands { get; private set; } = new();
+        public List<uint> CompatibleBrands { get; private set; } = new();
 
-        protected override long ParseBoxBody(BoxReader reader, int _)
+        protected override long ParseBody(BoxReader reader, int _)
         {
             MajorBrand = reader.ReadUInt32();
             MinorVersion = reader.ReadUInt32();
             var bytes = Size - HeaderSize - 8;
             while (bytes > 0)
             {
-                CompatibleBrands.Add(reader.ReadInt32());
+                CompatibleBrands.Add(reader.ReadUInt32());
                 bytes -= 4;
             }
             return ContentSize;
@@ -49,15 +46,14 @@ namespace Media.ISO.Boxes
         {
             writer.WriteUInt32(MajorBrand);
             writer.WriteUInt32(MinorVersion);
-            CompatibleBrands.ForEach(writer.WriteInt32);
+            CompatibleBrands.ForEach(writer.WriteUInt32);
             return ContentSize;
         }
 
         public override string ToString()
         {
             return base.ToString() +
-                   string.Format("Major:{0} Minor:{1}, Brands:{2}", MajorBrandName, MinorVersion,
-                       string.Join(",", CompatibleBrands.Select(brand => ((uint)brand).GetFourCC())));
+                   $"Major:{MajorBrandName} Minor:{MinorVersion}, Brands:{string.Join(",", CompatibleBrands.Select(brand => brand.GetFourCC()))}";
         }
     }
 }
