@@ -90,6 +90,17 @@
     }
 
     [AttributeUsage(AttributeTargets.Property)]
+    public sealed class FlagDependentAttribute : Attribute
+    {
+        public FlagDependentAttribute(uint flagMask)
+        {
+            FlagMask = flagMask;
+        }
+
+        public uint FlagMask { get; }
+    }
+
+    [AttributeUsage(AttributeTargets.Property)]
     public sealed class ReservedAttribute : Attribute
     {
         public ReservedAttribute(int byteCount)
@@ -98,5 +109,49 @@
         }
 
         public int ByteCount { get; }
+    }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    public sealed class CollectionSizeAttribute : Attribute
+    {
+        public CollectionSizeAttribute(string lengthPropertyName)
+        {
+            if (string.IsNullOrWhiteSpace(lengthPropertyName))
+            {
+                throw new ArgumentException("Length property name cannot be null or empty", nameof(lengthPropertyName));
+            }
+
+            LengthPropertyName = lengthPropertyName;
+        }
+
+        public string LengthPropertyName { get; }
+    }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    public sealed class CollectionLengthPrefixAttribute : Attribute
+    {
+        public CollectionLengthPrefixAttribute()
+            : this(typeof(uint))
+        {
+        }
+
+        public CollectionLengthPrefixAttribute(Type fieldType)
+        {
+            if (!IsSupportedFieldType(fieldType))
+            {
+                throw new ArgumentException("Collection length prefixes support only byte, ushort, uint, or ulong.", nameof(fieldType));
+            }
+            FieldType = fieldType;
+        }
+
+        public Type FieldType { get; }
+
+        private static bool IsSupportedFieldType(Type type)
+        {
+            return type == typeof(byte) ||
+                   type == typeof(ushort) ||
+                   type == typeof(uint) ||
+                   type == typeof(ulong);
+        }
     }
 }

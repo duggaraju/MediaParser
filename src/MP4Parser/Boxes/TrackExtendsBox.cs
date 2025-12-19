@@ -19,6 +19,9 @@ namespace Media.ISO.Boxes
     {
         public int TrackId { get; set; }
 
+        [Reserved(4)]
+        public byte Reserved { get; }
+
         public ulong DefaultSampleDescriptionIndex { get; set; } = 0;
 
         public ulong DefaultSampleDuration { get; set; } = 0;
@@ -26,27 +29,5 @@ namespace Media.ISO.Boxes
         public ulong DefaultSampleSize { get; set; } = 0;
 
         public uint DefaultSampleFlags { get; set; } = 0;
-
-        protected override int ContentSize =>
-            4 + // track id
-            4 + // reserved
-            8 + // default sample description index
-            8 + // default sample duration
-            8 + // default sample size
-            4;   // default sample flags
-
-        protected override void ParseBoxContent(BoxReader reader)
-        {
-            TrackId = reader.ReadInt32();
-            reader.ReadUInt32(); // reserved
-            DefaultSampleDescriptionIndex = reader.ReadUInt64();
-            DefaultSampleDuration = reader.ReadUInt64();
-            DefaultSampleSize = reader.ReadUInt64();
-            DefaultSampleFlags = reader.ReadUInt32();
-        }
-
-        protected override void WriteBoxContent(BoxWriter writer)
-        {
-        }
     }
 }

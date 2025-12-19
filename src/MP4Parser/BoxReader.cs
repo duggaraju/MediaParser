@@ -96,6 +96,18 @@ namespace Media.ISO
         }
 
 
+        public byte ReadByte()
+        {
+            var value = BaseStream.ReadByte();
+            if (value < 0)
+            {
+                throw new EndOfStreamException();
+            }
+
+            return (byte)value;
+        }
+
+
         public uint ReadUInt32()
         {
             return TryReadInt32(out var value) ? (uint)value : throw new EndOfStreamException();

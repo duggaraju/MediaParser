@@ -15,7 +15,10 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
     private const string ContainerAttributeMetadataName = "Media.ISO.ContainerAttribute";
     private const string VersionDependentSizeAttributeMetadataName = "Media.ISO.VersionDependentSizeAttribute";
     private const string FlagOptionalAttributeMetadataName = "Media.ISO.FlagOptionalAttribute";
+    private const string FlagDependentAttributeMetadataName = "Media.ISO.FlagDependentAttribute";
     private const string ReservedAttributeMetadataName = "Media.ISO.ReservedAttribute";
+    private const string CollectionSizeAttributeMetadataName = "Media.ISO.CollectionSizeAttribute";
+    private const string CollectionLengthPrefixAttributeMetadataName = "Media.ISO.CollectionLengthPrefixAttribute";
     private const string ReaderMetadataName = "Media.ISO.BoxReader";
     private const string WriterMetadataName = "Media.ISO.BoxWriter";
 
@@ -64,6 +67,7 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
     private const string ContainerBoxMetadataName = "Media.ISO.Boxes.ContainerBox";
     private const string FullContainerBoxMetadataName = "Media.ISO.Boxes.FullContainerBox";
     private const string FullBoxMetadataName = "Media.ISO.Boxes.FullBox";
+    private const string BoxMetadataName = "Media.ISO.Boxes.Box";
 
     private static GenerationTarget? GetGenerationTarget(
         GeneratorAttributeSyntaxContext context,
@@ -81,34 +85,44 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
         if (!IsPartial(typeSymbol))
         {
             diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.TypeMustBePartial, typeSymbol.Locations.FirstOrDefault(), typeSymbol.Name));
-            return new GenerationTarget(typeSymbol, ImmutableArray<PropertyModel>.Empty, shouldGenerate: false, diagnostics.ToImmutable(), isContainer, requiresFullBoxBase, generateParse: false, generateWrite: false, generateContentSize: false);
+            return new GenerationTarget(typeSymbol, ImmutableArray<PropertyModel>.Empty, shouldGenerate: false, diagnostics.ToImmutable(), isContainer, requiresFullBoxBase, isFullBox: false, generateParse: false, generateWrite: false, generateContentSize: false);
         }
 
         var inheritsContainer = InheritsFrom(typeSymbol, ContainerBoxMetadataName);
         var inheritsFullContainer = InheritsFrom(typeSymbol, FullContainerBoxMetadataName);
         var inheritsFullBox = InheritsFrom(typeSymbol, FullBoxMetadataName);
+        var inheritsBox = InheritsFrom(typeSymbol, BoxMetadataName);
         var needsFullBoxBase = requiresFullBoxBase && !inheritsFullBox;
         var isFullBox = inheritsFullBox || needsFullBoxBase;
+        var supportsBoxGeneration = isFullBox || inheritsBox;
 
         if (!isContainer && (inheritsContainer || inheritsFullContainer))
         {
-            return new GenerationTarget(typeSymbol, ImmutableArray<PropertyModel>.Empty, shouldGenerate: false, diagnostics.ToImmutable(), isContainer, needsFullBoxBase, generateParse: false, generateWrite: false, generateContentSize: false);
+            return new GenerationTarget(typeSymbol, ImmutableArray<PropertyModel>.Empty, shouldGenerate: false, diagnostics.ToImmutable(), isContainer, needsFullBoxBase, isFullBox, generateParse: false, generateWrite: false, generateContentSize: false);
         }
 
         if (isContainer)
         {
             var shouldGenerateContainer = diagnostics.Count == 0 && !inheritsContainer;
-            return new GenerationTarget(typeSymbol, ImmutableArray<PropertyModel>.Empty, shouldGenerateContainer, diagnostics.ToImmutable(), isContainer, needsFullBoxBase, generateParse: false, generateWrite: false, generateContentSize: false);
+            return new GenerationTarget(typeSymbol, ImmutableArray<PropertyModel>.Empty, shouldGenerateContainer, diagnostics.ToImmutable(), isContainer, needsFullBoxBase, isFullBox, generateParse: false, generateWrite: false, generateContentSize: false);
         }
 
-        if (!isFullBox)
+        if (!supportsBoxGeneration)
         {
-            return new GenerationTarget(typeSymbol, ImmutableArray<PropertyModel>.Empty, shouldGenerate: false, diagnostics.ToImmutable(), isContainer, needsFullBoxBase, generateParse: false, generateWrite: false, generateContentSize: false);
+            return new GenerationTarget(typeSymbol, ImmutableArray<PropertyModel>.Empty, shouldGenerate: false, diagnostics.ToImmutable(), isContainer, needsFullBoxBase, isFullBox, generateParse: false, generateWrite: false, generateContentSize: false);
         }
 
-        var hasParseOverride = HasOverride(typeSymbol, "ParseBoxContent");
-        var hasWriteOverride = HasOverride(typeSymbol, "WriteBoxContent");
-        var hasContentSizeOverride = HasContentSizeOverride(typeSymbol);
+        var hasParseOverride = HasOverride(typeSymbol, "ParseBody");
+        var hasWriteOverride = HasOverride(typeSymbol, "WriteBoxBody");
+        var hasContentSizeOverride = isFullBox
+            ? HasContentSizeOverride(typeSymbol)
+            : HasComputeBodySizeOverride(typeSymbol);
+
+        if (isFullBox)
+        {
+            hasParseOverride |= HasOverride(typeSymbol, "ParseBoxContent");
+            hasWriteOverride |= HasOverride(typeSymbol, "WriteBoxContent");
+        }
 
         var generateParse = !hasParseOverride;
         var generateWrite = !hasWriteOverride;
@@ -116,7 +130,7 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
 
         if (!generateParse && !generateWrite && !generateContentSize)
         {
-            return new GenerationTarget(typeSymbol, ImmutableArray<PropertyModel>.Empty, shouldGenerate: false, diagnostics.ToImmutable(), isContainer, needsFullBoxBase, generateParse, generateWrite, generateContentSize);
+            return new GenerationTarget(typeSymbol, ImmutableArray<PropertyModel>.Empty, shouldGenerate: false, diagnostics.ToImmutable(), isContainer, needsFullBoxBase, isFullBox, generateParse, generateWrite, generateContentSize);
         }
 
         var autoPropertySet = CollectAutoProperties(typeSymbol);
@@ -132,7 +146,11 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var hasReservedAttribute = property.GetAttributes().Any(attribute => AttributeMatches(attribute, ReservedAttributeMetadataName));
+            var attributes = property.GetAttributes();
+            var hasReservedAttribute = attributes.Any(attribute => AttributeMatches(attribute, ReservedAttributeMetadataName));
+            var hasFlagAttribute = attributes.Any(attribute =>
+                AttributeMatches(attribute, FlagOptionalAttributeMetadataName) ||
+                AttributeMatches(attribute, FlagDependentAttributeMetadataName));
 
             if (property.IsStatic || property.GetMethod is null)
             {
@@ -150,7 +168,8 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
                 continue;
             }
 
-            if (!hasReservedAttribute && !isArrayOrCollection && !autoPropertySet.Contains(property, SymbolEqualityComparer.Default))
+            if (!hasReservedAttribute && !isArrayOrCollection && !hasFlagAttribute &&
+                !autoPropertySet.Contains(property, SymbolEqualityComparer.Default))
             {
                 continue;
             }
@@ -202,12 +221,183 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
                         typeSymbol.Name));
                 }
             }
+
+            ValidateCollectionSizeReferences(typeSymbol, orderedProperties, diagnostics);
         }
 
         var hasAnyGeneration = generateParse || generateWrite || generateContentSize;
         var shouldGenerate = diagnostics.Count == 0 && !orderedProperties.IsDefaultOrEmpty && orderedProperties.Length > 0 && hasAnyGeneration;
 
-        return new GenerationTarget(typeSymbol, orderedProperties, shouldGenerate, diagnostics.ToImmutable(), isContainer, needsFullBoxBase, generateParse, generateWrite, generateContentSize);
+        return new GenerationTarget(typeSymbol, orderedProperties, shouldGenerate, diagnostics.ToImmutable(), isContainer, needsFullBoxBase, isFullBox, generateParse, generateWrite, generateContentSize);
+    }
+
+    private static void ValidateCollectionSizeReferences(
+        INamedTypeSymbol typeSymbol,
+        ImmutableArray<PropertyModel> orderedProperties,
+        ImmutableArray<Diagnostic>.Builder diagnostics)
+    {
+        var propertyIndex = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (var i = 0; i < orderedProperties.Length; i++)
+        {
+            propertyIndex[orderedProperties[i].Name] = i;
+        }
+
+        for (var i = 0; i < orderedProperties.Length; i++)
+        {
+            var property = orderedProperties[i];
+            var strategy = property.Accessor.LengthStrategy;
+            if (strategy.Kind != CollectionLengthKind.FromProperty)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrEmpty(strategy.LengthPropertyName) ||
+                !propertyIndex.TryGetValue(strategy.LengthPropertyName!, out var referencedIndex))
+            {
+                diagnostics.Add(Diagnostic.Create(
+                    DiagnosticDescriptors.CollectionSizeMissingProperty,
+                    property.Symbol.Locations.FirstOrDefault(),
+                    property.Name,
+                    strategy.LengthPropertyName ?? string.Empty,
+                    typeSymbol.Name));
+                continue;
+            }
+
+            if (referencedIndex >= i)
+            {
+                diagnostics.Add(Diagnostic.Create(
+                    DiagnosticDescriptors.CollectionSizePropertyOrder,
+                    property.Symbol.Locations.FirstOrDefault(),
+                    property.Name,
+                    strategy.LengthPropertyName ?? string.Empty,
+                    typeSymbol.Name));
+            }
+        }
+    }
+
+    private static CollectionLengthStrategy GetCollectionLengthStrategy(
+        IPropertySymbol property,
+        bool supportsStrategy,
+        out Diagnostic? diagnostic)
+    {
+        diagnostic = null;
+        var attributes = property.GetAttributes();
+        var sizeAttribute = attributes.FirstOrDefault(attribute => AttributeMatches(attribute, CollectionSizeAttributeMetadataName));
+        var prefixAttribute = attributes.FirstOrDefault(attribute => AttributeMatches(attribute, CollectionLengthPrefixAttributeMetadataName));
+
+        if ((sizeAttribute is not null || prefixAttribute is not null) && !supportsStrategy)
+        {
+            diagnostic = Diagnostic.Create(
+                DiagnosticDescriptors.CollectionLengthAttributeInvalidPropertyType,
+                property.Locations.FirstOrDefault(),
+                property.Name,
+                property.ContainingType?.Name ?? string.Empty);
+            return CollectionLengthStrategy.None;
+        }
+
+        if (sizeAttribute is not null && prefixAttribute is not null)
+        {
+            diagnostic = Diagnostic.Create(
+                DiagnosticDescriptors.CollectionLengthAttributeConflict,
+                property.Locations.FirstOrDefault(),
+                property.Name,
+                property.ContainingType?.Name ?? string.Empty);
+            return CollectionLengthStrategy.None;
+        }
+
+        if (sizeAttribute is not null)
+        {
+            if (sizeAttribute.ConstructorArguments.Length == 0 ||
+                sizeAttribute.ConstructorArguments[0].Value is not string lengthProperty ||
+                string.IsNullOrWhiteSpace(lengthProperty))
+            {
+                diagnostic = Diagnostic.Create(
+                    DiagnosticDescriptors.CollectionSizeInvalidReference,
+                    property.Locations.FirstOrDefault(),
+                    property.Name,
+                    property.ContainingType?.Name ?? string.Empty);
+                return CollectionLengthStrategy.None;
+            }
+
+            return CollectionLengthStrategy.FromProperty(lengthProperty);
+        }
+
+        if (prefixAttribute is not null)
+        {
+            var fieldSize = CollectionLengthFieldSize.UInt32;
+            if (prefixAttribute.ConstructorArguments.Length > 0)
+            {
+                var argumentValue = prefixAttribute.ConstructorArguments[0].Value;
+                if (argumentValue is ITypeSymbol typeSymbol)
+                {
+                    if (!TryGetCollectionLengthFieldSize(typeSymbol, out fieldSize))
+                    {
+                        diagnostic = Diagnostic.Create(
+                            DiagnosticDescriptors.CollectionLengthPrefixInvalidFieldType,
+                            property.Locations.FirstOrDefault(),
+                            property.Name,
+                            property.ContainingType?.Name ?? string.Empty);
+                        return CollectionLengthStrategy.None;
+                    }
+                }
+            }
+
+            return CollectionLengthStrategy.LengthPrefixed(fieldSize);
+        }
+
+        return CollectionLengthStrategy.None;
+    }
+
+    private static bool TryGetCollectionLengthFieldSize(ITypeSymbol typeSymbol, out CollectionLengthFieldSize fieldSize)
+    {
+        fieldSize = typeSymbol.SpecialType switch
+        {
+            SpecialType.System_Byte => CollectionLengthFieldSize.Byte,
+            SpecialType.System_UInt16 => CollectionLengthFieldSize.UInt16,
+            SpecialType.System_UInt32 => CollectionLengthFieldSize.UInt32,
+            SpecialType.System_UInt64 => CollectionLengthFieldSize.UInt64,
+            _ => CollectionLengthFieldSize.UInt32,
+        };
+
+        return typeSymbol.SpecialType is SpecialType.System_Byte or
+            SpecialType.System_UInt16 or
+            SpecialType.System_UInt32 or
+            SpecialType.System_UInt64;
+    }
+
+    private static bool HasComputeSizeMethod(ITypeSymbol type)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            foreach (var member in current.GetMembers("ComputeSize"))
+            {
+                if (member is IMethodSymbol method &&
+                    !method.IsStatic &&
+                    method.Parameters.Length == 0 &&
+                    method.ReturnType.SpecialType == SpecialType.System_Int32)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryCreatePrimitiveElementAccessor(ITypeSymbol elementType, out PropertyAccessor accessor)
+    {
+        accessor = elementType.SpecialType switch
+        {
+            SpecialType.System_Int16 => new SimplePropertyAccessor("ReadInt16()", "writer.WriteInt16({0});", "sizeof(short)"),
+            SpecialType.System_UInt16 => new SimplePropertyAccessor("ReadUInt16()", "writer.WriteUInt16({0});", "sizeof(ushort)"),
+            SpecialType.System_Int32 => new SimplePropertyAccessor("ReadInt32()", "writer.WriteInt32({0});", "sizeof(int)"),
+            SpecialType.System_UInt32 => new SimplePropertyAccessor("ReadUInt32()", "writer.WriteUInt32({0});", "sizeof(uint)"),
+            SpecialType.System_Int64 => new SimplePropertyAccessor("ReadInt64()", "writer.WriteInt64({0});", "sizeof(long)"),
+            SpecialType.System_UInt64 => new SimplePropertyAccessor("ReadUInt64()", "writer.WriteUInt64({0});", "sizeof(ulong)"),
+            _ => null!
+        };
+
+        return accessor is not null;
     }
 
     private static bool InheritsFrom(INamedTypeSymbol typeSymbol, string metadataName)
@@ -288,6 +478,19 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
                 return true;
             }
         }
+        return false;
+    }
+
+    private static bool HasComputeBodySizeOverride(INamedTypeSymbol typeSymbol)
+    {
+        foreach (var member in typeSymbol.GetMembers("ComputeBodySize"))
+        {
+            if (member is IMethodSymbol methodSymbol && methodSymbol.IsOverride)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -375,7 +578,7 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
                 builder.AppendLine();
             }
 
-            AppendContentSize(builder, memberIndent, target.Properties);
+            AppendContentSize(builder, memberIndent, target.Properties, target.IsFullBox);
             emittedSection = true;
         }
 
@@ -396,10 +599,11 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
     private static void AppendParseMethod(StringBuilder builder, string indent, IReadOnlyList<PropertyModel> properties)
     {
         builder.Append(indent)
-            .Append("protected override void ParseBoxContent(global::")
+            .Append("protected override long ParseBody(global::")
             .Append(ReaderMetadataName)
-            .AppendLine(" reader)");
+            .AppendLine(" reader, int depth)");
         builder.Append(indent).AppendLine("{");
+        builder.Append(indent).AppendLine("    var __bytesRead = 0L;");
         builder.Append(indent).AppendLine("    var __remaining = (int)global::System.Math.Max(0L, Size - HeaderSize);");
         for (var __index = 0; __index < properties.Count; __index++)
         {
@@ -415,31 +619,68 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
                 property.Accessor.AppendRead(builder, __indent, property.Name);
             }
 
+            var sizeExpression = property.Accessor.GetSizeExpression(property.Name);
             builder.Append(indent)
-                .Append("    __remaining -= ")
-                .Append(property.Accessor.GetSizeExpression(property.Name))
+                .Append("    var __size")
+                .Append(__index)
+                .Append(" = (long)(")
+                .Append(sizeExpression)
+                .AppendLine(");");
+            builder.Append(indent)
+                .Append("    __remaining -= (int)global::System.Math.Min(__size")
+                .Append(__index)
+                .AppendLine(", int.MaxValue);");
+            builder.Append(indent)
+                .Append("    __bytesRead += __size")
+                .Append(__index)
                 .AppendLine(";");
         }
+        builder.Append(indent).AppendLine("    return __bytesRead;");
         builder.Append(indent).AppendLine("}");
     }
 
     private static void AppendWriteMethod(StringBuilder builder, string indent, IReadOnlyList<PropertyModel> properties)
     {
         builder.Append(indent)
-            .Append("protected override void WriteBoxContent(global::")
+            .Append("protected override long WriteBoxBody(global::")
             .Append(WriterMetadataName)
             .AppendLine(" writer)");
         builder.Append(indent).AppendLine("{");
+        builder.Append(indent).AppendLine("    var __bytesWritten = 0L;");
         foreach (var property in properties)
         {
             property.Accessor.AppendWrite(builder, indent + "    ", property.Name);
+            builder.Append(indent)
+                .Append("    __bytesWritten += (long)(")
+                .Append(property.Accessor.GetSizeExpression(property.Name))
+                .AppendLine(");");
         }
+        builder.Append(indent).AppendLine("    return __bytesWritten;");
         builder.Append(indent).AppendLine("}");
     }
 
-    private static void AppendContentSize(StringBuilder builder, string indent, IReadOnlyList<PropertyModel> properties)
+    private static void AppendContentSize(StringBuilder builder, string indent, IReadOnlyList<PropertyModel> properties, bool isFullBox)
     {
-        builder.Append(indent).AppendLine("protected override int ContentSize =>");
+        if (isFullBox)
+        {
+            builder.Append(indent).AppendLine("protected override int ContentSize =>");
+            for (int i = 0; i < properties.Count; i++)
+            {
+                var property = properties[i];
+                var sizeExpression = property.Accessor.GetSizeExpression(property.Name);
+                builder.Append(indent)
+                    .Append("    ");
+                if (i > 0)
+                {
+                    builder.Append("+ ");
+                }
+                builder.Append(sizeExpression);
+                builder.AppendLine(i == properties.Count - 1 ? ";" : string.Empty);
+            }
+            return;
+        }
+
+        builder.Append(indent).AppendLine("protected override long ComputeBodySize() =>");
         for (int i = 0; i < properties.Count; i++)
         {
             var property = properties[i];
@@ -450,7 +691,9 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
             {
                 builder.Append("+ ");
             }
-            builder.Append(sizeExpression);
+            builder.Append("(long)(")
+                .Append(sizeExpression)
+                .Append(')');
             builder.AppendLine(i == properties.Count - 1 ? ";" : string.Empty);
         }
     }
@@ -475,6 +718,7 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
             ImmutableArray<Diagnostic> diagnostics,
             bool isContainer,
             bool requiresFullBoxBase,
+            bool isFullBox,
             bool generateParse,
             bool generateWrite,
             bool generateContentSize)
@@ -485,6 +729,7 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
             Diagnostics = diagnostics;
             IsContainer = isContainer;
             RequiresFullBoxBase = requiresFullBoxBase;
+            IsFullBox = isFullBox;
             GenerateParse = generateParse;
             GenerateWrite = generateWrite;
             GenerateContentSize = generateContentSize;
@@ -501,6 +746,8 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
         public bool IsContainer { get; }
 
         public bool RequiresFullBoxBase { get; }
+
+        public bool IsFullBox { get; }
 
         public bool GenerateParse { get; }
 
@@ -527,6 +774,98 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
         public long Order { get; }
     }
 
+    private enum CollectionLengthKind
+    {
+        None,
+        FromProperty,
+        LengthPrefixed
+    }
+
+    private enum CollectionLengthFieldSize
+    {
+        Byte = 1,
+        UInt16 = 2,
+        UInt32 = 4,
+        UInt64 = 8
+    }
+
+    private readonly struct CollectionLengthStrategy
+    {
+        public static CollectionLengthStrategy None => default;
+
+        private CollectionLengthStrategy(CollectionLengthKind kind, string? propertyName, CollectionLengthFieldSize fieldSize)
+        {
+            Kind = kind;
+            LengthPropertyName = propertyName;
+            FieldSize = fieldSize;
+        }
+
+        public CollectionLengthKind Kind { get; }
+
+        public string? LengthPropertyName { get; }
+
+        public CollectionLengthFieldSize FieldSize { get; }
+
+        public static CollectionLengthStrategy FromProperty(string propertyName)
+        {
+            return new CollectionLengthStrategy(CollectionLengthKind.FromProperty, propertyName, CollectionLengthFieldSize.UInt32);
+        }
+
+        public static CollectionLengthStrategy LengthPrefixed(CollectionLengthFieldSize fieldSize)
+        {
+            return new CollectionLengthStrategy(CollectionLengthKind.LengthPrefixed, null, fieldSize);
+        }
+
+        public int PrefixSizeInBytes => Kind == CollectionLengthKind.LengthPrefixed ? (int)FieldSize : 0;
+
+        public string GetReaderExpression()
+        {
+            return FieldSize switch
+            {
+                CollectionLengthFieldSize.Byte => "(ulong)reader.ReadByte()",
+                CollectionLengthFieldSize.UInt16 => "(ulong)reader.ReadUInt16()",
+                CollectionLengthFieldSize.UInt32 => "(ulong)reader.ReadUInt32()",
+                CollectionLengthFieldSize.UInt64 => "reader.ReadUInt64()",
+                _ => "(ulong)0"
+            };
+        }
+
+        public string GetWriterInvocation(string writerName, string countExpression)
+        {
+            return FieldSize switch
+            {
+                CollectionLengthFieldSize.Byte => $"{writerName}.WriteByte((byte)global::System.Math.Min({countExpression}, 0xFF))",
+                CollectionLengthFieldSize.UInt16 => $"{writerName}.WriteUInt16((ushort)global::System.Math.Min({countExpression}, 0xFFFF))",
+                CollectionLengthFieldSize.UInt32 => $"{writerName}.WriteUInt32((uint){countExpression})",
+                CollectionLengthFieldSize.UInt64 => $"{writerName}.WriteUInt64((ulong){countExpression})",
+                _ => $"{writerName}.WriteUInt32((uint){countExpression})"
+            };
+        }
+    }
+
+    private static void AppendCountDeclarationFromProperty(StringBuilder builder, string indent, string lengthPropertyName)
+    {
+        builder.Append(indent)
+            .Append("var __count = (int)global::System.Math.Max(0L, global::System.Math.Min((long)")
+            .Append(lengthPropertyName)
+            .Append(", int.MaxValue));")
+            .AppendLine();
+    }
+
+    private static void AppendCountDeclarationFromPrefix(StringBuilder builder, string indent, CollectionLengthStrategy strategy)
+    {
+        var readExpression = strategy.GetReaderExpression();
+        builder.Append(indent)
+            .Append("var __count = (int)global::System.Math.Min(")
+            .Append(readExpression)
+            .Append(", (ulong)int.MaxValue);")
+            .AppendLine();
+    }
+
+    private static string GetArrayCountExpression(string propertyName) => $"({propertyName}?.Length ?? 0)";
+
+    private static string GetListCountExpression(string propertyName) => $"({propertyName}?.Count ?? 0)";
+
     private abstract class PropertyAccessor
     {
         public abstract void AppendRead(StringBuilder builder, string indent, string propertyName);
@@ -536,6 +875,10 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
         public abstract string GetSizeExpression(string propertyName);
 
         public virtual bool RequiresRemainingBytes => false;
+
+        public virtual CollectionLengthStrategy LengthStrategy => CollectionLengthStrategy.None;
+
+        public virtual string? GetCollectionCountExpression(string propertyName) => null;
     }
 
     private sealed class SimplePropertyAccessor : PropertyAccessor
@@ -749,6 +1092,8 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
             $"((Flags & {_maskLiteral}) != 0 ? ({_inner.GetSizeExpression(propertyName)}) : 0)";
 
         public override bool RequiresRemainingBytes => _inner.RequiresRemainingBytes;
+
+        public override CollectionLengthStrategy LengthStrategy => _inner.LengthStrategy;
     }
 
     private sealed class ReservedPropertyAccessor : PropertyAccessor
@@ -789,20 +1134,52 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
         private readonly string _readerMethod;
         private readonly string _writerMethod;
         private readonly string _sizeOfExpression;
+        private readonly string _elementTypeName;
+        private readonly CollectionLengthStrategy _lengthStrategy;
 
-        public PrimitiveArrayPropertyAccessor(string readerMethod, string writerMethod, string sizeOfExpression)
+        public PrimitiveArrayPropertyAccessor(string readerMethod, string writerMethod, string sizeOfExpression, string elementTypeName, CollectionLengthStrategy lengthStrategy)
         {
             _readerMethod = readerMethod;
             _writerMethod = writerMethod;
             _sizeOfExpression = sizeOfExpression;
+            _elementTypeName = elementTypeName;
+            _lengthStrategy = lengthStrategy;
         }
 
         public override void AppendRead(StringBuilder builder, string indent, string propertyName)
         {
+            string lengthExpression;
+            if (_lengthStrategy.Kind == CollectionLengthKind.FromProperty)
+            {
+                AppendCountDeclarationFromProperty(builder, indent, _lengthStrategy.LengthPropertyName!);
+                builder.Append(indent)
+                    .Append(propertyName)
+                    .Append(" = new ")
+                    .Append(_elementTypeName)
+                    .Append("[__count];")
+                    .AppendLine();
+                lengthExpression = "__count";
+            }
+            else if (_lengthStrategy.Kind == CollectionLengthKind.LengthPrefixed)
+            {
+                AppendCountDeclarationFromPrefix(builder, indent, _lengthStrategy);
+                builder.Append(indent)
+                    .Append(propertyName)
+                    .Append(" = new ")
+                    .Append(_elementTypeName)
+                    .Append("[__count];")
+                    .AppendLine();
+                lengthExpression = "__count";
+            }
+            else
+            {
+                lengthExpression = propertyName + ".Length";
+            }
+
             builder.Append(indent)
                 .Append("for (var __i = 0; __i < ")
-                .Append(propertyName)
-                .AppendLine(".Length; __i++)");
+                .Append(lengthExpression)
+                .AppendLine("; __i++)");
             builder.Append(indent).AppendLine("{");
             builder.Append(indent)
                 .Append("    ")
@@ -815,37 +1192,100 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
 
         public override void AppendWrite(StringBuilder builder, string indent, string propertyName)
         {
+            string lengthExpression;
+            if (_lengthStrategy.Kind == CollectionLengthKind.LengthPrefixed)
+            {
+                builder.Append(indent)
+                    .Append("var __count = (int)global::System.Math.Max(0, ")
+                    .Append(GetArrayCountExpression(propertyName))
+                    .Append(");")
+                    .AppendLine();
+                builder.Append(indent)
+                    .Append(_lengthStrategy.GetWriterInvocation("writer", "__count"))
+                    .AppendLine(";");
+                lengthExpression = "__count";
+            }
+            else
+            {
+                lengthExpression = propertyName + ".Length";
+            }
+
             builder.Append(indent)
-                .Append("foreach (var __item in ")
-                .Append(propertyName)
-                .AppendLine(")");
+                .Append("for (var __i = 0; __i < ")
+                .Append(lengthExpression)
+                .AppendLine("; __i++)");
             builder.Append(indent).AppendLine("{");
             builder.Append(indent)
                 .Append("    writer.")
                 .Append(_writerMethod)
-                .AppendLine("(__item);");
+                .Append("(")
+                .Append(propertyName)
+                .Append("[__i]);")
+                .AppendLine();
             builder.Append(indent).AppendLine("}");
         }
 
-        public override string GetSizeExpression(string propertyName) =>
-            $"({propertyName}.Length * {_sizeOfExpression})";
+        public override string GetSizeExpression(string propertyName)
+        {
+            var baseSize = $"({GetArrayCountExpression(propertyName)} * {_sizeOfExpression})";
+            if (_lengthStrategy.Kind == CollectionLengthKind.LengthPrefixed)
+            {
+                return $"{_lengthStrategy.PrefixSizeInBytes} + {baseSize}";
+            }
+
+            return baseSize;
+        }
+
+        public override CollectionLengthStrategy LengthStrategy => _lengthStrategy;
+
+        public override string? GetCollectionCountExpression(string propertyName) => GetArrayCountExpression(propertyName);
     }
 
     private sealed class StructArrayPropertyAccessor : PropertyAccessor
     {
         private readonly string _elementTypeName;
+        private readonly CollectionLengthStrategy _lengthStrategy;
 
-        public StructArrayPropertyAccessor(string elementTypeName)
+        public StructArrayPropertyAccessor(string elementTypeName, CollectionLengthStrategy lengthStrategy)
         {
             _elementTypeName = elementTypeName;
+            _lengthStrategy = lengthStrategy;
         }
 
         public override void AppendRead(StringBuilder builder, string indent, string propertyName)
         {
+            string lengthExpression;
+            if (_lengthStrategy.Kind == CollectionLengthKind.FromProperty)
+            {
+                AppendCountDeclarationFromProperty(builder, indent, _lengthStrategy.LengthPropertyName!);
+                builder.Append(indent)
+                    .Append(propertyName)
+                    .Append(" = new ")
+                    .Append(_elementTypeName)
+                    .Append("[__count];")
+                    .AppendLine();
+                lengthExpression = "__count";
+            }
+            else if (_lengthStrategy.Kind == CollectionLengthKind.LengthPrefixed)
+            {
+                AppendCountDeclarationFromPrefix(builder, indent, _lengthStrategy);
+                builder.Append(indent)
+                    .Append(propertyName)
+                    .Append(" = new ")
+                    .Append(_elementTypeName)
+                    .Append("[__count];")
+                    .AppendLine();
+                lengthExpression = "__count";
+            }
+            else
+            {
+                lengthExpression = propertyName + ".Length";
+            }
+
             builder.Append(indent)
                 .Append("for (var __i = 0; __i < ")
-                .Append(propertyName)
-                .AppendLine(".Length; __i++)");
+                .Append(lengthExpression)
+                .AppendLine("; __i++)");
             builder.Append(indent).AppendLine("{");
             builder.Append(indent)
                 .Append("    ")
@@ -862,92 +1302,224 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
 
         public override void AppendWrite(StringBuilder builder, string indent, string propertyName)
         {
+            string lengthExpression;
+            if (_lengthStrategy.Kind == CollectionLengthKind.LengthPrefixed)
+            {
+                builder.Append(indent)
+                    .Append("var __count = (int)global::System.Math.Max(0, ")
+                    .Append(GetArrayCountExpression(propertyName))
+                    .Append(");")
+                    .AppendLine();
+                builder.Append(indent)
+                    .Append(_lengthStrategy.GetWriterInvocation("writer", "__count"))
+                    .AppendLine(";");
+                lengthExpression = "__count";
+            }
+            else
+            {
+                lengthExpression = propertyName + ".Length";
+            }
+
             builder.Append(indent)
-                .Append("foreach (var __item in ")
-                .Append(propertyName)
-                .AppendLine(")");
+                .Append("for (var __i = 0; __i < ")
+                .Append(lengthExpression)
+                .AppendLine("; __i++)");
             builder.Append(indent).AppendLine("{");
             builder.Append(indent)
-                .AppendLine("    __item.Write(writer);");
+                .Append("    ")
+                .Append(propertyName)
+                .AppendLine("[__i].Write(writer);");
             builder.Append(indent).AppendLine("}");
         }
 
         public override string GetSizeExpression(string propertyName)
         {
-            return $"global::System.Linq.Enumerable.Sum({propertyName}, __x => __x.ComputeSize())";
+            var baseExpression = $"global::System.Linq.Enumerable.Sum({propertyName} ?? global::System.Array.Empty<{_elementTypeName}>(), __x => __x.ComputeSize())";
+            if (_lengthStrategy.Kind == CollectionLengthKind.LengthPrefixed)
+            {
+                return $"{_lengthStrategy.PrefixSizeInBytes} + {baseExpression}";
+            }
+
+            return baseExpression;
         }
+
+        public override CollectionLengthStrategy LengthStrategy => _lengthStrategy;
+
+        public override string? GetCollectionCountExpression(string propertyName) => GetArrayCountExpression(propertyName);
     }
 
     private sealed class ListPropertyAccessor : PropertyAccessor
     {
-        private readonly PropertyAccessor _inner;
+        private readonly PropertyAccessor? _primitiveAccessor;
         private readonly bool _isStructOrClass;
+        private readonly string _elementTypeName;
+        private readonly CollectionLengthStrategy _lengthStrategy;
 
-        public ListPropertyAccessor(PropertyAccessor inner, bool isStructOrClass)
+        public ListPropertyAccessor(PropertyAccessor? primitiveAccessor, bool isStructOrClass, string elementTypeName, CollectionLengthStrategy lengthStrategy)
         {
-            _inner = inner;
+            _primitiveAccessor = primitiveAccessor;
             _isStructOrClass = isStructOrClass;
+            _elementTypeName = elementTypeName;
+            _lengthStrategy = lengthStrategy;
         }
 
         public override void AppendRead(StringBuilder builder, string indent, string propertyName)
         {
+            if (_lengthStrategy.Kind == CollectionLengthKind.None)
+            {
+                builder.Append(indent)
+                    .Append("for (var __i = 0; __i < ")
+                    .Append(propertyName)
+                    .AppendLine(".Count; __i++)");
+                builder.Append(indent).AppendLine("{");
+                if (_isStructOrClass)
+                {
+                    builder.Append(indent)
+                        .Append("    var __item = ")
+                        .Append(propertyName)
+                        .AppendLine("[__i];");
+                    builder.Append(indent)
+                        .AppendLine("    __item.Read(reader);");
+                    builder.Append(indent)
+                        .Append("    ")
+                        .Append(propertyName)
+                        .AppendLine("[__i] = __item;");
+                }
+                else if (_primitiveAccessor is not null)
+                {
+                    _primitiveAccessor.AppendRead(builder, indent + "    ", $"{propertyName}[__i]");
+                }
+                builder.Append(indent).AppendLine("}");
+                return;
+            }
+
+            if (_lengthStrategy.Kind == CollectionLengthKind.FromProperty)
+            {
+                AppendCountDeclarationFromProperty(builder, indent, _lengthStrategy.LengthPropertyName!);
+            }
+            else
+            {
+                AppendCountDeclarationFromPrefix(builder, indent, _lengthStrategy);
+            }
+
             builder.Append(indent)
-                .Append("for (var __i = 0; __i < ")
                 .Append(propertyName)
-                .AppendLine(".Count; __i++)");
+                .Append(" = new global::System.Collections.Generic.List<")
+                .Append(_elementTypeName)
+                .Append(">(")
+                .Append("__count);")
+                .AppendLine();
+            builder.Append(indent)
+                .Append("for (var __i = 0; __i < __count; __i++)")
+                .AppendLine();
             builder.Append(indent).AppendLine("{");
             if (_isStructOrClass)
             {
                 builder.Append(indent)
-                    .Append("    var __item = ")
-                    .Append(propertyName)
-                    .AppendLine("[__i];");
+                    .Append("    var __item = new ")
+                    .Append(_elementTypeName)
+                    .AppendLine("();");
                 builder.Append(indent)
                     .AppendLine("    __item.Read(reader);");
                 builder.Append(indent)
                     .Append("    ")
                     .Append(propertyName)
-                    .AppendLine("[__i] = __item;");
+                    .AppendLine(".Add(__item);");
             }
-            else
+            else if (_primitiveAccessor is not null)
             {
-                // For primitive types in lists, we need to generate the read directly
-                // This is handled by the inner accessor
-                _inner.AppendRead(builder, indent + "    ", $"{propertyName}[__i]");
+                builder.Append(indent)
+                    .Append("    ")
+                    .Append(_elementTypeName)
+                    .AppendLine(" __item = default!;");
+                _primitiveAccessor.AppendRead(builder, indent + "    ", "__item");
+                builder.Append(indent)
+                    .Append("    ")
+                    .Append(propertyName)
+                    .AppendLine(".Add(__item);");
             }
             builder.Append(indent).AppendLine("}");
         }
 
         public override void AppendWrite(StringBuilder builder, string indent, string propertyName)
         {
+            if (_lengthStrategy.Kind == CollectionLengthKind.LengthPrefixed)
+            {
+                builder.Append(indent)
+                    .Append("var __list = ")
+                    .Append(propertyName)
+                    .Append(" ?? new global::System.Collections.Generic.List<")
+                    .Append(_elementTypeName)
+                    .AppendLine(">(0);");
+                builder.Append(indent)
+                    .Append("var __count = __list.Count;")
+                    .AppendLine();
+                builder.Append(indent)
+                    .Append(_lengthStrategy.GetWriterInvocation("writer", "__count"))
+                    .AppendLine(";");
+                builder.Append(indent)
+                    .Append("for (var __i = 0; __i < __count; __i++)")
+                    .AppendLine();
+                builder.Append(indent).AppendLine("{");
+                if (_isStructOrClass)
+                {
+                    builder.Append(indent)
+                        .AppendLine("    __list[__i].Write(writer);");
+                }
+                else if (_primitiveAccessor is not null)
+                {
+                    _primitiveAccessor.AppendWrite(builder, indent + "    ", "__list[__i]");
+                }
+                builder.Append(indent).AppendLine("}");
+                return;
+            }
+
             builder.Append(indent)
                 .Append("foreach (var __item in ")
                 .Append(propertyName)
-                .AppendLine(")");
+                .Append(" ?? global::System.Linq.Enumerable.Empty<")
+                .Append(_elementTypeName)
+                .AppendLine(">())");
             builder.Append(indent).AppendLine("{");
             if (_isStructOrClass)
             {
                 builder.Append(indent)
                     .AppendLine("    __item.Write(writer);");
             }
-            else
+            else if (_primitiveAccessor is not null)
             {
-                _inner.AppendWrite(builder, indent + "    ", "__item");
+                _primitiveAccessor.AppendWrite(builder, indent + "    ", "__item");
             }
             builder.Append(indent).AppendLine("}");
         }
 
         public override string GetSizeExpression(string propertyName)
         {
+            string baseExpression;
             if (_isStructOrClass)
             {
-                return $"global::System.Linq.Enumerable.Sum({propertyName}, __x => __x.ComputeSize())";
+                baseExpression = $"global::System.Linq.Enumerable.Sum({propertyName} ?? global::System.Linq.Enumerable.Empty<{_elementTypeName}>(), __x => __x.ComputeSize())";
+            }
+            else if (_primitiveAccessor is not null)
+            {
+                baseExpression = $"({GetListCountExpression(propertyName)} * {_primitiveAccessor.GetSizeExpression(propertyName)})";
             }
             else
             {
-                return $"({propertyName}.Count * {_inner.GetSizeExpression("__dummy").Replace("__dummy", "1").Replace("sizeof", "sizeof")})";
+                baseExpression = "0";
             }
+
+            if (_lengthStrategy.Kind == CollectionLengthKind.LengthPrefixed)
+            {
+                return $"{_lengthStrategy.PrefixSizeInBytes} + {baseExpression}";
+            }
+
+            return baseExpression;
         }
+
+        public override CollectionLengthStrategy LengthStrategy => _lengthStrategy;
+
+        public override string? GetCollectionCountExpression(string propertyName) => GetListCountExpression(propertyName);
     }
 
     private static class PropertyAccessorFactory
@@ -955,7 +1527,10 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
         public static bool TryCreate(IPropertySymbol property, bool inheritsFullBox, out PropertyAccessor accessor, out Diagnostic? diagnostic)
         {
             diagnostic = null;
-            var flagAttribute = property.GetAttributes().FirstOrDefault(attribute => AttributeMatches(attribute, FlagOptionalAttributeMetadataName));
+            var propertyAttributes = property.GetAttributes();
+            var flagAttribute = propertyAttributes.FirstOrDefault(attribute =>
+                AttributeMatches(attribute, FlagOptionalAttributeMetadataName) ||
+                AttributeMatches(attribute, FlagDependentAttributeMetadataName));
             uint? flagMask = null;
 
             if (flagAttribute is not null)
@@ -995,7 +1570,7 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
                 return createdAccessor;
             }
 
-            var reservedAttribute = property.GetAttributes().FirstOrDefault(attribute => AttributeMatches(attribute, ReservedAttributeMetadataName));
+            var reservedAttribute = propertyAttributes.FirstOrDefault(attribute => AttributeMatches(attribute, ReservedAttributeMetadataName));
             if (reservedAttribute is not null)
             {
                 if (!IsSupportedReservedPropertyType(property.Type))
@@ -1025,7 +1600,7 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
                 return true;
             }
 
-            var versionAttribute = property.GetAttributes().FirstOrDefault(attribute => AttributeMatches(attribute, VersionDependentSizeAttributeMetadataName));
+            var versionAttribute = propertyAttributes.FirstOrDefault(attribute => AttributeMatches(attribute, VersionDependentSizeAttributeMetadataName));
             if (versionAttribute is not null)
             {
                 if (!inheritsFullBox)
@@ -1066,14 +1641,22 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
 
             if (property.Type is IArrayTypeSymbol arrayType)
             {
-                if (arrayType.ElementType.SpecialType == SpecialType.System_Byte)
+                var isByteArray = arrayType.ElementType.SpecialType == SpecialType.System_Byte;
+                var lengthStrategy = GetCollectionLengthStrategy(property, !isByteArray, out diagnostic);
+                if (diagnostic is not null)
+                {
+                    accessor = null!;
+                    return false;
+                }
+
+                if (isByteArray)
                 {
                     accessor = ApplyFlag(new ByteArrayPropertyAccessor());
                     return true;
                 }
 
                 // Handle arrays of primitive types
-                if (TryGetPrimitiveArrayAccessor(arrayType.ElementType, out var primitiveArrayAccessor))
+                if (TryGetPrimitiveArrayAccessor(arrayType.ElementType, lengthStrategy, out var primitiveArrayAccessor))
                 {
                     accessor = ApplyFlag(primitiveArrayAccessor);
                     return true;
@@ -1082,8 +1665,20 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
                 // Handle arrays of structs/classes
                 if (arrayType.ElementType.TypeKind == TypeKind.Struct || arrayType.ElementType.TypeKind == TypeKind.Class)
                 {
+                    if (!HasComputeSizeMethod(arrayType.ElementType))
+                    {
+                        diagnostic = Diagnostic.Create(
+                            DiagnosticDescriptors.CollectionElementMissingComputeSize,
+                            property.Locations.FirstOrDefault(),
+                            property.Name,
+                            arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                            property.ContainingType?.Name ?? string.Empty);
+                        accessor = null!;
+                        return false;
+                    }
+
                     var elementTypeName = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                    accessor = ApplyFlag(new StructArrayPropertyAccessor(elementTypeName));
+                    accessor = ApplyFlag(new StructArrayPropertyAccessor(elementTypeName, lengthStrategy));
                     return true;
                 }
 
@@ -1113,21 +1708,48 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
 
                 if (isList && elementType is not null)
                 {
-                    // Handle lists of primitive types
-                    if (TryGetPrimitiveArrayAccessor(elementType, out var primitiveListAccessor))
+                    var lengthStrategy = GetCollectionLengthStrategy(property, supportsStrategy: true, out diagnostic);
+                    if (diagnostic is not null)
                     {
-                        accessor = ApplyFlag(new ListPropertyAccessor(primitiveListAccessor, isStructOrClass: false));
+                        accessor = null!;
+                        return false;
+                    }
+
+                    // Handle lists of primitive types
+                    if (TryCreatePrimitiveElementAccessor(elementType, out var primitiveListAccessor))
+                    {
+                        var elementTypeName = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                        accessor = ApplyFlag(new ListPropertyAccessor(primitiveListAccessor, isStructOrClass: false, elementTypeName, lengthStrategy));
                         return true;
                     }
 
                     // Handle lists of structs/classes
                     if (elementType.TypeKind == TypeKind.Struct || elementType.TypeKind == TypeKind.Class)
                     {
+                        if (!HasComputeSizeMethod(elementType))
+                        {
+                            diagnostic = Diagnostic.Create(
+                                DiagnosticDescriptors.CollectionElementMissingComputeSize,
+                                property.Locations.FirstOrDefault(),
+                                property.Name,
+                                elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                                property.ContainingType?.Name ?? string.Empty);
+                            accessor = null!;
+                            return false;
+                        }
+
                         var elementTypeName = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                        accessor = ApplyFlag(new ListPropertyAccessor(new StructArrayPropertyAccessor(elementTypeName), isStructOrClass: true));
+                        accessor = ApplyFlag(new ListPropertyAccessor(null, isStructOrClass: true, elementTypeName, lengthStrategy));
                         return true;
                     }
                 }
+            }
+
+            _ = GetCollectionLengthStrategy(property, supportsStrategy: false, out diagnostic);
+            if (diagnostic is not null)
+            {
+                accessor = null!;
+                return false;
             }
 
             if (TryCreateSimpleAccessor(property, out var simpleAccessor))
@@ -1146,16 +1768,17 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
             return false;
         }
 
-        private static bool TryGetPrimitiveArrayAccessor(ITypeSymbol elementType, out PropertyAccessor accessor)
+        private static bool TryGetPrimitiveArrayAccessor(ITypeSymbol elementType, CollectionLengthStrategy lengthStrategy, out PropertyAccessor accessor)
         {
+            var elementTypeName = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             PropertyAccessor? candidate = elementType.SpecialType switch
             {
-                SpecialType.System_Int16 => new PrimitiveArrayPropertyAccessor("ReadInt16()", "WriteInt16", "sizeof(short)"),
-                SpecialType.System_UInt16 => new PrimitiveArrayPropertyAccessor("ReadUInt16()", "WriteUInt16", "sizeof(ushort)"),
-                SpecialType.System_Int32 => new PrimitiveArrayPropertyAccessor("ReadInt32()", "WriteInt32", "sizeof(int)"),
-                SpecialType.System_UInt32 => new PrimitiveArrayPropertyAccessor("ReadUInt32()", "WriteUInt32", "sizeof(uint)"),
-                SpecialType.System_Int64 => new PrimitiveArrayPropertyAccessor("ReadInt64()", "WriteInt64", "sizeof(long)"),
-                SpecialType.System_UInt64 => new PrimitiveArrayPropertyAccessor("ReadUInt64()", "WriteUInt64", "sizeof(ulong)"),
+                SpecialType.System_Int16 => new PrimitiveArrayPropertyAccessor("ReadInt16()", "WriteInt16", "sizeof(short)", elementTypeName, lengthStrategy),
+                SpecialType.System_UInt16 => new PrimitiveArrayPropertyAccessor("ReadUInt16()", "WriteUInt16", "sizeof(ushort)", elementTypeName, lengthStrategy),
+                SpecialType.System_Int32 => new PrimitiveArrayPropertyAccessor("ReadInt32()", "WriteInt32", "sizeof(int)", elementTypeName, lengthStrategy),
+                SpecialType.System_UInt32 => new PrimitiveArrayPropertyAccessor("ReadUInt32()", "WriteUInt32", "sizeof(uint)", elementTypeName, lengthStrategy),
+                SpecialType.System_Int64 => new PrimitiveArrayPropertyAccessor("ReadInt64()", "WriteInt64", "sizeof(long)", elementTypeName, lengthStrategy),
+                SpecialType.System_UInt64 => new PrimitiveArrayPropertyAccessor("ReadUInt64()", "WriteUInt64", "sizeof(ulong)", elementTypeName, lengthStrategy),
                 _ => null
             };
 
@@ -1347,16 +1970,16 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
 
         public static readonly DiagnosticDescriptor FlagAttributeInvalidUsage = new(
             id: "MP4GEN006",
-            title: "Flag optional attribute requires FullBox",
-            messageFormat: "Property '{0}' on '{1}' must inherit from FullBox to use FlagOptionalAttribute",
+            title: "Flag-dependent attribute requires FullBox",
+            messageFormat: "Property '{0}' on '{1}' must inherit from FullBox to use FlagDependentAttribute or FlagOptionalAttribute",
             category: Category,
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
         public static readonly DiagnosticDescriptor FlagAttributeInvalidMask = new(
             id: "MP4GEN007",
-            title: "Flag optional attribute invalid mask",
-            messageFormat: "Property '{0}' on '{1}' must specify a constant uint mask value for FlagOptionalAttribute",
+            title: "Flag-dependent attribute invalid mask",
+            messageFormat: "Property '{0}' on '{1}' must specify a constant uint mask value for FlagDependentAttribute or FlagOptionalAttribute",
             category: Category,
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
@@ -1373,6 +1996,62 @@ public sealed class BoxContentGenerator : IIncrementalGenerator
             id: "MP4GEN009",
             title: "Reserved attribute invalid size",
             messageFormat: "Property '{0}' on '{1}' must specify a positive byte count for ReservedAttribute",
+            category: Category,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor CollectionSizeMissingProperty = new(
+            id: "MP4GEN010",
+            title: "Collection size reference missing",
+            messageFormat: "Property '{0}' on '{2}' references length property '{1}' which does not exist",
+            category: Category,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor CollectionSizePropertyOrder = new(
+            id: "MP4GEN011",
+            title: "Collection size reference ordering",
+            messageFormat: "Property '{0}' on '{2}' references length property '{1}' which must be declared before the collection",
+            category: Category,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor CollectionLengthAttributeInvalidPropertyType = new(
+            id: "MP4GEN012",
+            title: "Collection length attribute invalid usage",
+            messageFormat: "Property '{0}' on '{1}' uses collection length attributes but is not a supported collection type",
+            category: Category,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor CollectionLengthAttributeConflict = new(
+            id: "MP4GEN013",
+            title: "Conflicting collection length attributes",
+            messageFormat: "Property '{0}' on '{1}' cannot specify both CollectionSizeAttribute and CollectionLengthPrefixAttribute",
+            category: Category,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor CollectionSizeInvalidReference = new(
+            id: "MP4GEN014",
+            title: "Collection size attribute missing reference",
+            messageFormat: "Property '{0}' on '{1}' must specify a non-empty property name for CollectionSizeAttribute",
+            category: Category,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor CollectionLengthPrefixInvalidFieldType = new(
+            id: "MP4GEN015",
+            title: "Collection length prefix invalid type",
+            messageFormat: "Property '{0}' on '{1}' specifies an unsupported collection length prefix type",
+            category: Category,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor CollectionElementMissingComputeSize = new(
+            id: "MP4GEN016",
+            title: "Collection element missing ComputeSize",
+            messageFormat: "Property '{0}' on '{2}' uses element type '{1}' which must declare an instance ComputeSize() method returning int",
             category: Category,
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);

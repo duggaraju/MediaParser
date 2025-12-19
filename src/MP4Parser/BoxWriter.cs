@@ -38,6 +38,11 @@ namespace Media.ISO
             BaseStream.Write(data);
         }
 
+        public void WriteByte(byte value)
+        {
+            BaseStream.WriteByte(value);
+        }
+
         public void WriteInt16(short value)
         {
             Span<byte> buffer = stackalloc byte[2];

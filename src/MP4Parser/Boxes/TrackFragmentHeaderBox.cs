@@ -15,16 +15,9 @@
         private ulong _baseDataOffset;
         private uint _sampleDescriptionIndex;
 
-        protected override int ContentSize =>
-            sizeof(uint) +
-            ((Flags & BaseDataOffsetPresent) == 0 ? 0 : sizeof(ulong)) +
-            ((Flags & SampleDescriptionIndexPresent) == 0 ? 0 : sizeof(uint)) +
-            ((Flags & DefaultSampleDurationPresent) == 0 ? 0 : sizeof(uint)) +
-            ((Flags & DefaultSampleSizePresent) == 0 ? 0 : sizeof(uint)) +
-            ((Flags & DefaultSampleFlagsPresent) == 0 ? 0 : sizeof(uint));
-
         public uint TrackId { get; set; }
 
+        [FlagDependent(SampleDescriptionIndexPresent)]
         public uint SampleDescriptionIndex
         {
             get => _sampleDescriptionIndex;
@@ -35,6 +28,7 @@
             }
         }
 
+        [FlagDependent(BaseDataOffsetPresent)]
         public ulong BaseDataOffset
         {
             get => _baseDataOffset;
@@ -45,6 +39,7 @@
             }
         }
 
+        [FlagDependent(DefaultSampleDurationPresent)]
         public uint DefaultSampleDuration
         {
             get => _defaultSampleDuration;
@@ -55,6 +50,7 @@
             }
         }
 
+        [FlagDependent(DefaultSampleSizePresent)]
         public uint DefaultSampleSize
         {
             get => _defaultSampleSize;
@@ -65,6 +61,7 @@
             }
         }
 
+        [FlagDependent(DefaultSampleFlagsPresent)]
         public uint DefaultSampleFlags
         {
             get => _defaultSampleFlags;
@@ -72,56 +69,6 @@
             {
                 Flags |= DefaultSampleFlagsPresent;
                 _defaultSampleFlags = value;
-            }
-        }
-
-        protected override void ParseBoxContent(BoxReader reader)
-        {
-            TrackId = reader.ReadUInt32();
-            if ((Flags & BaseDataOffsetPresent) != 0)
-            {
-                BaseDataOffset = reader.ReadUInt64();
-            }
-            if ((Flags & SampleDescriptionIndexPresent) != 0)
-            {
-                SampleDescriptionIndex = reader.ReadUInt32();
-            }
-            if ((Flags & DefaultSampleDurationPresent) != 0)
-            {
-                DefaultSampleDuration = reader.ReadUInt32();
-            }
-            if ((Flags & DefaultSampleSizePresent) != 0)
-            {
-                DefaultSampleSize = reader.ReadUInt32();
-            }
-            if ((Flags & DefaultSampleFlagsPresent) != 0)
-            {
-                DefaultSampleFlags = reader.ReadUInt32();
-            }
-        }
-
-        protected override void WriteBoxContent(BoxWriter writer)
-        {
-            writer.WriteUInt32(TrackId);
-            if ((Flags & BaseDataOffsetPresent) != 0)
-            {
-                writer.WriteUInt64(BaseDataOffset);
-            }
-            if ((Flags & SampleDescriptionIndexPresent) != 0)
-            {
-                writer.WriteUInt32(SampleDescriptionIndex);
-            }
-            if ((Flags & DefaultSampleDurationPresent) != 0)
-            {
-                writer.WriteUInt32(DefaultSampleDuration);
-            }
-            if ((Flags & DefaultSampleSizePresent) != 0)
-            {
-                writer.WriteUInt32(DefaultSampleSize);
-            }
-            if ((Flags & DefaultSampleFlagsPresent) != 0)
-            {
-                writer.WriteUInt32(DefaultSampleFlags);
             }
         }
     }

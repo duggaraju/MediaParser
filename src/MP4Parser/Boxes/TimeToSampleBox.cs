@@ -18,30 +18,11 @@ namespace Media.ISO.Boxes
                 writer.WriteUInt32(SampleCount);
                 writer.WriteUInt32(SampleDelta);
             }
+
+            public int ComputeSize() => sizeof(uint) + sizeof(uint);
         }
 
+        [CollectionLengthPrefix(typeof(uint))]
         public List<Entry> Entries { get; set; } = new();
-
-        protected override void ParseBoxContent(BoxReader reader)
-        {
-            var count = reader.ReadUInt32();
-            for (var i = 0; i < count; i++)
-            {
-                var entry = new Entry();
-                entry.Read(reader);
-                Entries.Add(entry);
-            }
-        }
-
-        protected override int ContentSize => 4 + Entries.Count * 8;
-
-        protected override void WriteBoxContent(BoxWriter writer)
-        {
-            writer.WriteUInt32((uint) Entries.Count);
-            foreach(var entry in Entries)
-            {
-                entry.Write(writer);
-            }
-        }
     }
 }
