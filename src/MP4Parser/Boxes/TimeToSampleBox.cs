@@ -1,6 +1,4 @@
-﻿using System.Formats.Asn1;
-
-namespace Media.ISO.Boxes
+﻿namespace Media.ISO.Boxes
 {
     [FullBox(BoxType.TimeToSampleBox)]
     public partial class TimeToSampleBox

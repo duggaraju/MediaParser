@@ -135,5 +135,13 @@ public sealed partial class BoxContentGenerator
             category: Category,
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor CollectionLengthToEndUnsupportedType = new(
+            id: "MP4GEN017",
+            title: "Collection length-to-end unsupported type",
+            messageFormat: "Property '{0}' on '{1}' uses CollectionLengthToEndAttribute but element type '{2}' is not a supported fixed-size primitive type",
+            category: Category,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
     }
 }

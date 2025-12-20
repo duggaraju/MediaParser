@@ -23,32 +23,10 @@ namespace Media.ISO.Boxes
 
         public uint MinorVersion { get; set; }
 
+        [CollectionLengthToEnd]
         public List<uint> CompatibleBrands { get; private set; } = new();
 
-        protected override long ParseBody(BoxReader reader, int _)
-        {
-            MajorBrand = reader.ReadUInt32();
-            MinorVersion = reader.ReadUInt32();
-            var bytes = Size - HeaderSize - 8;
-            while (bytes > 0)
-            {
-                CompatibleBrands.Add(reader.ReadUInt32());
-                bytes -= 4;
-            }
-            return ContentSize;
-        }
-
-        int ContentSize => 8 + CompatibleBrands.Count * 4;
-
-        protected override long ComputeBodySize() => ContentSize;
-
-        protected override long WriteBoxBody(BoxWriter writer)
-        {
-            writer.WriteUInt32(MajorBrand);
-            writer.WriteUInt32(MinorVersion);
-            CompatibleBrands.ForEach(writer.WriteUInt32);
-            return ContentSize;
-        }
+        protected override long ComputeBodySize() => sizeof(uint) + sizeof(uint) + CompatibleBrands.Count * sizeof(uint);
 
         public override string ToString()
         {

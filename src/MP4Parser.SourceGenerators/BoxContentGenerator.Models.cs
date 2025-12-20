@@ -74,7 +74,8 @@ public sealed partial class BoxContentGenerator
     {
         None,
         FromProperty,
-        LengthPrefixed
+        LengthPrefixed,
+        RemainingBytes
     }
 
     private enum CollectionLengthFieldSize
@@ -110,6 +111,11 @@ public sealed partial class BoxContentGenerator
         public static CollectionLengthStrategy LengthPrefixed(CollectionLengthFieldSize fieldSize)
         {
             return new CollectionLengthStrategy(CollectionLengthKind.LengthPrefixed, null, fieldSize);
+        }
+
+        public static CollectionLengthStrategy RemainingBytes()
+        {
+            return new CollectionLengthStrategy(CollectionLengthKind.RemainingBytes, null, CollectionLengthFieldSize.UInt32);
         }
 
         public int PrefixSizeInBytes => Kind == CollectionLengthKind.LengthPrefixed ? (int)FieldSize : 0;

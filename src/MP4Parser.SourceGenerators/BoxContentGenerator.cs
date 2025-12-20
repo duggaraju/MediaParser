@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -16,6 +15,7 @@ public sealed partial class BoxContentGenerator : IIncrementalGenerator
     private const string ReservedAttributeMetadataName = "Media.ISO.ReservedAttribute";
     private const string CollectionSizeAttributeMetadataName = "Media.ISO.CollectionSizeAttribute";
     private const string CollectionLengthPrefixAttributeMetadataName = "Media.ISO.CollectionLengthPrefixAttribute";
+    private const string CollectionLengthToEndAttributeMetadataName = "Media.ISO.CollectionLengthToEndAttribute";
     private const string ReaderMetadataName = "Media.ISO.BoxReader";
     private const string WriterMetadataName = "Media.ISO.BoxWriter";
 
@@ -23,6 +23,7 @@ public sealed partial class BoxContentGenerator : IIncrementalGenerator
     private const string FullContainerBoxMetadataName = "Media.ISO.Boxes.FullContainerBox";
     private const string FullBoxMetadataName = "Media.ISO.Boxes.FullBox";
     private const string BoxMetadataName = "Media.ISO.Boxes.Box";
+    private const string VersionAndFlagsMetadataName = "Media.ISO.Boxes.VersionAndFlags";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {

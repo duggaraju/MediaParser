@@ -18,3 +18,4 @@ MP4GEN013 | BoxContentGenerator | Warning | Conflicting collection length attrib
 MP4GEN014 | BoxContentGenerator | Warning | Collection size attribute missing reference
 MP4GEN015 | BoxContentGenerator | Warning | Collection length prefix invalid type
 MP4GEN016 | BoxContentGenerator | Warning | Collection element missing ComputeSize
+MP4GEN017 | BoxContentGenerator | Warning | Collection length-to-end unsupported type

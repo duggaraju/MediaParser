@@ -1,4 +1,3 @@
-using System;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -73,6 +72,11 @@ public sealed partial class BoxContentGenerator
     private static string GetArrayCountExpression(string propertyName) => $"({propertyName}?.Length ?? 0)";
 
     private static string GetListCountExpression(string propertyName) => $"({propertyName}?.Count ?? 0)";
+
+    private static string GetVersionAndFlagsExpression()
+    {
+        return "_versionAndFlags";
+    }
 
     private static bool AttributeMatches(AttributeData attribute, string metadataName)
     {

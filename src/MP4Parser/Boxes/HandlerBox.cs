@@ -1,7 +1,4 @@
-﻿
-using System.Text;
-
-namespace Media.ISO.Boxes
+﻿namespace Media.ISO.Boxes
 {
     [FullBox(BoxType.HandlerBox)]
     public partial class HandlerBox

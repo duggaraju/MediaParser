@@ -90,7 +90,7 @@ namespace Media.ISO.Boxes
             set => _versionAndFlags.Flags = value;
         }
 
-        private VersionAndFlags _versionAndFlags;
+        protected VersionAndFlags _versionAndFlags;
 
         protected override long ParseBody(BoxReader reader, int depth)
         {

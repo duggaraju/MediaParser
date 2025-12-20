@@ -1,4 +1,3 @@
-using Media.ISO;
 using Media.ISO.Boxes;
 using Xunit;
 
@@ -6,64 +5,72 @@ namespace Media.ISO.MP4Parser.Tests
 {
     public class ReservedAttributeTests
     {
-        private static readonly byte[] Buffer =
+        private const string Description = "Video Handler";
+
+        private static readonly uint VideoHandlerCode = BoxExtensions.FromFourCC("vide".AsSpan());
+
+        private static readonly byte[] HandlerBoxBuffer =
         {
-            0x00, 0x00, 0x00, 0x18,
-            0x72, 0x73, 0x76, 0x62,
-            0x01, 0x00, 0x00, 0x00,
-            0x11, 0x22, 0x33, 0x44,
-            0xde, 0xad, 0xbe, 0xef,
-            0x55, 0x66, 0x77, 0x88
+            0x00, 0x00, 0x00, 0x2E, // size (46 bytes)
+            0x68, 0x64, 0x6C, 0x72, // "hdlr"
+            0x00, 0x00, 0x00, 0x00, // version & flags
+            0x00, 0x00, 0x00, 0x00, // reserved (4 bytes)
+            0x76, 0x69, 0x64, 0x65, // handler "vide"
+            0x00, 0x00, 0x00, 0x00, // reserved padding (12 bytes)
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x56, 0x69, 0x64, 0x65, // "Video Handler" string + null terminator
+            0x6F, 0x20, 0x48, 0x61,
+            0x6E, 0x64, 0x6C, 0x65,
+            0x72, 0x00
         };
 
         [Fact]
         public void ReservedAttribute_ReadsReservedBytes()
         {
-            using var stream = new MemoryStream(Buffer, writable: false);
+            using var stream = new MemoryStream(HandlerBoxBuffer, writable: false);
             var reader = new BoxReader(stream);
-            var box = BoxFactory.Parse<ReservedFieldsBox>(reader);
+            var box = BoxFactory.Parse<HandlerBox>(reader);
 
             Assert.NotNull(box);
             var parsed = box!;
-            Assert.Equal("rsvb".GetBoxType(), parsed.Type);
-            Assert.Equal((byte)1, parsed.Version);
+            Assert.Equal(BoxType.HandlerBox, parsed.Type);
+            Assert.Equal((byte)0, parsed.Version);
             Assert.Equal(0u, parsed.Flags);
-            Assert.Equal(0x11223344u, parsed.LeadingValue);
-            Assert.Equal(ReservedFieldsBox.ReservedFieldLength, parsed.ReservedBytes);
-            Assert.Equal(0x55667788u, parsed.TrailingValue);
+            Assert.Equal(VideoHandlerCode, parsed.Handler);
+            Assert.Equal("vide", parsed.HandlerName);
+            Assert.Equal(Description, parsed.HandlerDescription);
+            Assert.Equal(0, parsed.PreDefined);
+            Assert.Equal(0, parsed.Reserverd);
         }
 
         [Fact]
         public void ReservedAttribute_SerializesPadding()
         {
-            var box = new ReservedFieldsBox
+            var box = new HandlerBox
             {
-                Version = 1,
-                LeadingValue = 0x11223344u,
-                TrailingValue = 0x55667788u
+                Handler = VideoHandlerCode,
+                HandlerDescription = Description
             };
 
             box.ComputeSize();
+            Assert.Equal(HandlerBoxBuffer.Length, box.Size);
             using var stream = new MemoryStream();
             box.Write(stream);
 
             var data = stream.ToArray();
-            Assert.Equal(0x18, data.Length);
-
-            const int reservedOffset = 12 + sizeof(uint);
-            for (var i = 0; i < ReservedFieldsBox.ReservedFieldLength; i++)
-            {
-                Assert.Equal(0, data[reservedOffset + i]);
-            }
+            Assert.Equal(HandlerBoxBuffer.Length, data.Length);
+            Assert.Equal(HandlerBoxBuffer, data);
 
             stream.Position = 0;
             var reader = new BoxReader(stream);
-            var reparsed = BoxFactory.Parse<ReservedFieldsBox>(reader);
+            var reparsed = BoxFactory.Parse<HandlerBox>(reader);
             Assert.NotNull(reparsed);
             var reparsedBox = reparsed!;
-            Assert.Equal(box.LeadingValue, reparsedBox.LeadingValue);
-            Assert.Equal(ReservedFieldsBox.ReservedFieldLength, reparsedBox.ReservedBytes);
-            Assert.Equal(box.TrailingValue, reparsedBox.TrailingValue);
+            Assert.Equal(box.Handler, reparsedBox.Handler);
+            Assert.Equal(box.HandlerDescription, reparsedBox.HandlerDescription);
+            Assert.Equal(0, reparsedBox.PreDefined);
+            Assert.Equal(0, reparsedBox.Reserverd);
         }
     }
 }

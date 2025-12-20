@@ -19,9 +19,12 @@ namespace Media.ISO.Boxes
     {
         public uint TrackId { get; set; }
 
+        public uint EntrySize { get; set; }
+
         /// <summary>
         /// An entry in the tfra box.
         /// </summary>
+        [VersionDependentSize]
         public struct Entry
         {
             /// <summary>
@@ -51,95 +54,77 @@ namespace Media.ISO.Boxes
             /// </summary>
             public uint SampleNumber { get; set; }
 
-            public void Write(BoxWriter writer)
+            public static int SampleNumberSize(uint flags)
             {
-                writer.WriteUInt64(Time);
-                writer.WriteUInt64(MoofOffset);
-                writer.WriteVariableLengthField(TrackFragmentNumber, 1);
-                writer.WriteVariableLengthField(TrackRunNumber, 1);
-                writer.WriteVariableLengthField(SampleNumber, 1);
+                var size = (flags & 0x03);
+                return (int)size + 1;
             }
 
-            public void Read(BoxReader reader)
+            public static int TrackRunNumberSize(uint flags)
             {
-                Time = reader.ReadUInt64();
-                MoofOffset = reader.ReadUInt64();
-                TrackFragmentNumber = reader.ReadVariableLengthField(1);
-                TrackRunNumber = reader.ReadVariableLengthField(1);
-                SampleNumber = reader.ReadVariableLengthField(1);
+                var size = (flags & 0x0C) >> 2;
+                return (int)size + 1;
+            }
+
+            public static int TrackFragmentNumberSize(uint flags)
+            {
+                var size = (flags & 0x30) >> 4;
+                return (int)size + 1;
+            }
+
+            public void Write(BoxWriter writer, VersionAndFlags versionAndFlags)
+            {
+                if (versionAndFlags.Version == 1)
+                {
+                    writer.WriteUInt64(Time);
+                    writer.WriteUInt64(MoofOffset);
+                }
+                else
+                {
+                    writer.WriteUInt32((uint)Time);
+                    writer.WriteUInt32((uint)MoofOffset);
+                }
+
+                var flags = versionAndFlags.Flags;
+                writer.WriteVariableLengthField(TrackFragmentNumber, TrackFragmentNumberSize(flags));
+                writer.WriteVariableLengthField(TrackRunNumber, TrackRunNumberSize(flags));
+                writer.WriteVariableLengthField(SampleNumber, SampleNumberSize(flags));
+            }
+
+            public void Read(BoxReader reader, VersionAndFlags versionAndFlags)
+            {
+                if (versionAndFlags.Version == 1)
+                {
+                    Time = reader.ReadUInt64();
+                    MoofOffset = reader.ReadUInt64();
+                }
+                else
+                {
+                    Time = reader.ReadUInt32();
+                    MoofOffset = reader.ReadUInt32();
+                }
+
+                var flags = versionAndFlags.Flags;
+                TrackFragmentNumber = reader.ReadVariableLengthField(TrackFragmentNumberSize(flags));
+                TrackRunNumber = reader.ReadVariableLengthField(TrackRunNumberSize(flags));
+                SampleNumber = reader.ReadVariableLengthField(SampleNumberSize(flags));
+            }
+
+            public int ComputeSize(VersionAndFlags versionAndFlags)
+            {
+                var baseSize = versionAndFlags.Version == 1
+                    ? sizeof(ulong) * 2
+                    : sizeof(uint) * 2; // Time + MoofOffset
+                var flags = versionAndFlags.Flags;
+                return baseSize + SampleNumberSize(flags) + TrackRunNumberSize(flags) + TrackFragmentNumberSize(flags);
             }
         }
 
         /// <summary>
         ///  The random access entries for this track.
         /// </summary>
-        public readonly List<Entry> Entries = new List<Entry>();
+        [CollectionLengthPrefix(typeof(uint))]
+        public List<Entry> Entries { get; private set; } = new ();
 
-        protected override int ContentSize =>
-            12 +
-            Entries.Count * EntrySize;
-
-        private int EntrySize =>
-            (Version == 1 ? 16 : 8) + SizeOfTrackFragmentNumber + SizeOfTrackRunNumber + SizeOfSampleNumber + 3;
-
-        /// <summary>
-        /// Parse the box content.
-        /// </summary>
-        protected override void ParseBoxContent(BoxReader reader)
-        {
-            TrackId = reader.ReadUInt32();
-            _sizeOfEntry = reader.ReadInt32();
-            Entries.Clear();
-            Entries.Capacity = reader.ReadInt32();
-            for (int i = 0; i < Entries.Capacity; ++i)
-            {
-                Entry entry = new Entry();
-                if (Version == 1)
-                {
-                    entry.Time = reader.ReadUInt64();
-                    entry.MoofOffset = reader.ReadUInt64();
-                }
-                else
-                {
-                    entry.Time = reader.ReadUInt32();
-                    entry.MoofOffset = reader.ReadUInt32();
-                }
-                entry.TrackFragmentNumber = reader.ReadVariableLengthField(SizeOfTrackFragmentNumber + 1);
-                entry.TrackRunNumber = reader.ReadVariableLengthField(SizeOfTrackRunNumber + 1);
-                entry.SampleNumber = reader.ReadVariableLengthField(SizeOfSampleNumber + 1);
-                Entries.Add(entry);
-            }
-        }
-
-        protected override void WriteBoxContent(BoxWriter writer)
-        {
-            writer.WriteUInt32(TrackId);
-            writer.WriteInt32(_sizeOfEntry);
-            writer.WriteInt32(Entries.Count);
-            Entries.ForEach(entry =>
-            {
-                if (Version == 1)
-                {
-                    writer.WriteUInt64(entry.Time);
-                    writer.WriteUInt64(entry.MoofOffset);
-                }
-                else
-                {
-                    writer.WriteUInt32((uint)entry.Time);
-                    writer.WriteUInt32((uint)entry.MoofOffset);
-                }
-                writer.WriteVariableLengthField(entry.TrackFragmentNumber, SizeOfTrackFragmentNumber + 1);
-                writer.WriteVariableLengthField(entry.TrackRunNumber, SizeOfTrackRunNumber + 1);
-                writer.WriteVariableLengthField(entry.SampleNumber, SizeOfSampleNumber + 1);
-            });
-        }
-
-        public int SizeOfTrackFragmentNumber => (_sizeOfEntry & 0x30) >> 4;
-
-        public int SizeOfTrackRunNumber => (_sizeOfEntry & 0xC0) >> 2;
-
-        public int SizeOfSampleNumber => _sizeOfEntry & 0x3;
-
-        private int _sizeOfEntry;
     }
 }

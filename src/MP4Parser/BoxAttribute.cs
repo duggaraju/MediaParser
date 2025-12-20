@@ -67,7 +67,7 @@
         }
     }
 
-    [AttributeUsage(AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct)]
     public sealed class VersionDependentSizeAttribute : Attribute
     {
         public VersionDependentSizeAttribute(int versionThreshold = 1)
@@ -153,5 +153,10 @@
                    type == typeof(uint) ||
                    type == typeof(ulong);
         }
+    }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    public sealed class CollectionLengthToEndAttribute : Attribute
+    {
     }
 }

@@ -1,6 +1,4 @@
-using System;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -289,9 +287,29 @@ public sealed partial class BoxContentGenerator
             _lengthStrategy = lengthStrategy;
         }
 
+        public override bool RequiresRemainingBytes => _lengthStrategy.Kind == CollectionLengthKind.RemainingBytes;
+
         public override void AppendRead(StringBuilder builder, string indent, string propertyName)
         {
-            var lengthExpression = InitializeArrayForRead(builder, indent, propertyName, _elementTypeName, _lengthStrategy);
+            string lengthExpression;
+            if (_lengthStrategy.Kind == CollectionLengthKind.RemainingBytes)
+            {
+                builder.Append(indent)
+                    .Append("var __count = global::System.Math.Max(0, __remaining / ")
+                    .Append(_sizeOfExpression)
+                    .AppendLine(");");
+                builder.Append(indent)
+                    .Append(propertyName)
+                    .Append(" = new ")
+                    .Append(_elementTypeName)
+                    .Append("[__count];")
+                    .AppendLine();
+                lengthExpression = "__count";
+            }
+            else
+            {
+                lengthExpression = InitializeArrayForRead(builder, indent, propertyName, _elementTypeName, _lengthStrategy);
+            }
 
             builder.Append(indent)
                 .Append("for (var __i = 0; __i < ")
@@ -346,11 +364,13 @@ public sealed partial class BoxContentGenerator
     {
         private readonly string _elementTypeName;
         private readonly CollectionLengthStrategy _lengthStrategy;
+        private readonly bool _requiresVersionContext;
 
-        public StructArrayPropertyAccessor(string elementTypeName, CollectionLengthStrategy lengthStrategy)
+        public StructArrayPropertyAccessor(string elementTypeName, CollectionLengthStrategy lengthStrategy, bool requiresVersionContext)
         {
             _elementTypeName = elementTypeName;
             _lengthStrategy = lengthStrategy;
+            _requiresVersionContext = requiresVersionContext;
         }
 
         public override void AppendRead(StringBuilder builder, string indent, string propertyName)
@@ -371,7 +391,12 @@ public sealed partial class BoxContentGenerator
             builder.Append(indent)
                 .Append("    ")
                 .Append(propertyName)
-                .AppendLine("[__i].Read(reader);");
+                .Append("[__i].Read(reader");
+            if (_requiresVersionContext)
+            {
+                builder.Append(", ").Append(GetVersionAndFlagsExpression());
+            }
+            builder.AppendLine(");");
             builder.Append(indent).AppendLine("}");
         }
 
@@ -387,13 +412,23 @@ public sealed partial class BoxContentGenerator
             builder.Append(indent)
                 .Append("    ")
                 .Append(propertyName)
-                .AppendLine("[__i].Write(writer);");
+                .Append("[__i].Write(writer");
+            if (_requiresVersionContext)
+            {
+                builder.Append(", ").Append(GetVersionAndFlagsExpression());
+            }
+            builder.AppendLine(");");
             builder.Append(indent).AppendLine("}");
         }
 
         public override string GetSizeExpression(string propertyName)
         {
-            var baseExpression = $"global::System.Linq.Enumerable.Sum({propertyName} ?? global::System.Array.Empty<{_elementTypeName}>(), __x => __x.ComputeSize())";
+            var collectionExpression = $"{propertyName} ?? global::System.Array.Empty<{_elementTypeName}>()";
+            var contextExpression = GetVersionAndFlagsExpression();
+            var computeSizeInvocation = _requiresVersionContext
+                ? $"__x.ComputeSize({contextExpression})"
+                : "__x.ComputeSize()";
+            var baseExpression = $"global::System.Linq.Enumerable.Sum({collectionExpression}, __x => {computeSizeInvocation})";
             if (_lengthStrategy.Kind == CollectionLengthKind.LengthPrefixed)
             {
                 return $"{_lengthStrategy.PrefixSizeInBytes} + {baseExpression}";
@@ -413,17 +448,74 @@ public sealed partial class BoxContentGenerator
         private readonly bool _isStructOrClass;
         private readonly string _elementTypeName;
         private readonly CollectionLengthStrategy _lengthStrategy;
+        private readonly bool _requiresVersionContext;
+        private readonly string? _primitiveElementSizeExpression;
 
-        public ListPropertyAccessor(PropertyAccessor? primitiveAccessor, bool isStructOrClass, string elementTypeName, CollectionLengthStrategy lengthStrategy)
+        public ListPropertyAccessor(PropertyAccessor? primitiveAccessor, bool isStructOrClass, string elementTypeName, CollectionLengthStrategy lengthStrategy, bool requiresVersionContext = false, string? primitiveElementSizeExpression = null)
         {
             _primitiveAccessor = primitiveAccessor;
             _isStructOrClass = isStructOrClass;
             _elementTypeName = elementTypeName;
             _lengthStrategy = lengthStrategy;
+            _requiresVersionContext = requiresVersionContext && isStructOrClass;
+            _primitiveElementSizeExpression = primitiveElementSizeExpression;
         }
+
+        public override bool RequiresRemainingBytes => _lengthStrategy.Kind == CollectionLengthKind.RemainingBytes || (_primitiveAccessor?.RequiresRemainingBytes ?? false);
 
         public override void AppendRead(StringBuilder builder, string indent, string propertyName)
         {
+            if (_lengthStrategy.Kind == CollectionLengthKind.RemainingBytes)
+            {
+                builder.Append(indent)
+                    .Append("var __count = global::System.Math.Max(0, __remaining / ")
+                    .Append(_primitiveElementSizeExpression ?? "1")
+                    .AppendLine(");");
+                builder.Append(indent)
+                    .Append(propertyName)
+                    .Append(" = new global::System.Collections.Generic.List<")
+                    .Append(_elementTypeName)
+                    .Append(">(__count);")
+                    .AppendLine();
+                builder.Append(indent)
+                    .Append("for (var __i = 0; __i < __count; __i++)")
+                    .AppendLine();
+                builder.Append(indent).AppendLine("{");
+                if (_isStructOrClass)
+                {
+                    builder.Append(indent)
+                        .Append("    var __item = new ")
+                        .Append(_elementTypeName)
+                        .AppendLine("();");
+                    builder.Append(indent)
+                        .Append("    __item.Read(reader");
+                    if (_requiresVersionContext)
+                    {
+                        builder.Append(", ").Append(GetVersionAndFlagsExpression());
+                    }
+                    builder.AppendLine(");");
+                    builder.Append(indent)
+                        .Append("    ")
+                        .Append(propertyName)
+                        .AppendLine(".Add(__item);");
+                }
+                else if (_primitiveAccessor is not null)
+                {
+                    builder.Append(indent)
+                        .Append("    ")
+                        .Append(_elementTypeName)
+                        .AppendLine(" __item = default!;");
+                    _primitiveAccessor.AppendRead(builder, indent + "    ", "__item");
+                    builder.Append(indent)
+                        .Append("    ")
+                        .Append(propertyName)
+                        .AppendLine(".Add(__item);");
+                }
+
+                builder.Append(indent).AppendLine("}");
+                return;
+            }
+
             if (_lengthStrategy.Kind == CollectionLengthKind.None)
             {
                 builder.Append(indent)
@@ -438,7 +530,12 @@ public sealed partial class BoxContentGenerator
                         .Append(propertyName)
                         .AppendLine("[__i];");
                     builder.Append(indent)
-                        .AppendLine("    __item.Read(reader);");
+                        .Append("    __item.Read(reader");
+                    if (_requiresVersionContext)
+                    {
+                        builder.Append(", ").Append(GetVersionAndFlagsExpression());
+                    }
+                    builder.AppendLine(");");
                     builder.Append(indent)
                         .Append("    ")
                         .Append(propertyName)
@@ -480,7 +577,12 @@ public sealed partial class BoxContentGenerator
                     .Append(_elementTypeName)
                     .AppendLine("();");
                 builder.Append(indent)
-                    .AppendLine("    __item.Read(reader);");
+                    .Append("    __item.Read(reader");
+                if (_requiresVersionContext)
+                {
+                    builder.Append(", ").Append(GetVersionAndFlagsExpression());
+                }
+                builder.AppendLine(");");
                 builder.Append(indent)
                     .Append("    ")
                     .Append(propertyName)
@@ -525,7 +627,12 @@ public sealed partial class BoxContentGenerator
                 if (_isStructOrClass)
                 {
                     builder.Append(indent)
-                        .AppendLine("    __list[__i].Write(writer);");
+                        .Append("    __list[__i].Write(writer");
+                    if (_requiresVersionContext)
+                    {
+                        builder.Append(", ").Append(GetVersionAndFlagsExpression());
+                    }
+                    builder.AppendLine(");");
                 }
                 else if (_primitiveAccessor is not null)
                 {
@@ -546,7 +653,12 @@ public sealed partial class BoxContentGenerator
             if (_isStructOrClass)
             {
                 builder.Append(indent)
-                    .AppendLine("    __item.Write(writer);");
+                    .Append("    __item.Write(writer");
+                if (_requiresVersionContext)
+                {
+                    builder.Append(", ").Append(GetVersionAndFlagsExpression());
+                }
+                builder.AppendLine(");");
             }
             else if (_primitiveAccessor is not null)
             {
@@ -561,7 +673,12 @@ public sealed partial class BoxContentGenerator
             string baseExpression;
             if (_isStructOrClass)
             {
-                baseExpression = $"global::System.Linq.Enumerable.Sum({propertyName} ?? global::System.Linq.Enumerable.Empty<{_elementTypeName}>(), __x => __x.ComputeSize())";
+                var collectionExpression = $"{propertyName} ?? global::System.Linq.Enumerable.Empty<{_elementTypeName}>()";
+                var contextExpression = GetVersionAndFlagsExpression();
+                var computeSizeInvocation = _requiresVersionContext
+                    ? $"__x.ComputeSize({contextExpression})"
+                    : "__x.ComputeSize()";
+                baseExpression = $"global::System.Linq.Enumerable.Sum({collectionExpression}, __x => {computeSizeInvocation})";
             }
             else if (_primitiveAccessor is not null)
             {
@@ -712,6 +829,18 @@ public sealed partial class BoxContentGenerator
                     return false;
                 }
 
+                if (lengthStrategy.Kind == CollectionLengthKind.RemainingBytes && !IsFixedSizePrimitive(arrayType.ElementType))
+                {
+                    diagnostic = Diagnostic.Create(
+                        DiagnosticDescriptors.CollectionLengthToEndUnsupportedType,
+                        property.Locations.FirstOrDefault(),
+                        property.Name,
+                        property.ContainingType?.Name ?? string.Empty,
+                        arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+                    accessor = null!;
+                    return false;
+                }
+
                 if (isByteArray)
                 {
                     accessor = ApplyFlag(new ByteArrayPropertyAccessor());
@@ -726,7 +855,19 @@ public sealed partial class BoxContentGenerator
 
                 if (arrayType.ElementType.TypeKind == TypeKind.Struct || arrayType.ElementType.TypeKind == TypeKind.Class)
                 {
-                    if (!HasComputeSizeMethod(arrayType.ElementType))
+                    var requiresVersionContext = TypeHasVersionDependentSizeAttribute(arrayType.ElementType);
+                    if (requiresVersionContext && !inheritsFullBox)
+                    {
+                        diagnostic = Diagnostic.Create(
+                            DiagnosticDescriptors.VersionAttributeInvalidUsage,
+                            property.Locations.FirstOrDefault(),
+                            property.Name,
+                            property.ContainingType?.Name ?? string.Empty);
+                        accessor = null!;
+                        return false;
+                    }
+
+                    if (!HasComputeSizeMethod(arrayType.ElementType, requiresVersionContext))
                     {
                         diagnostic = Diagnostic.Create(
                             DiagnosticDescriptors.CollectionElementMissingComputeSize,
@@ -739,7 +880,7 @@ public sealed partial class BoxContentGenerator
                     }
 
                     var elementTypeName = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                    accessor = ApplyFlag(new StructArrayPropertyAccessor(elementTypeName, lengthStrategy));
+                    accessor = ApplyFlag(new StructArrayPropertyAccessor(elementTypeName, lengthStrategy, requiresVersionContext));
                     return true;
                 }
 
@@ -774,16 +915,52 @@ public sealed partial class BoxContentGenerator
                         return false;
                     }
 
-                    if (TryCreatePrimitiveElementAccessor(elementType, out var primitiveListAccessor))
+                    if (TryCreatePrimitiveElementAccessor(elementType, out var primitiveListAccessor, out var elementSizeExpression))
                     {
                         var elementTypeName = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                        accessor = ApplyFlag(new ListPropertyAccessor(primitiveListAccessor, isStructOrClass: false, elementTypeName, lengthStrategy));
+                        accessor = ApplyFlag(new ListPropertyAccessor(primitiveListAccessor, isStructOrClass: false, elementTypeName, lengthStrategy, primitiveElementSizeExpression: elementSizeExpression));
                         return true;
+                    }
+
+                    if (lengthStrategy.Kind == CollectionLengthKind.RemainingBytes)
+                    {
+                        diagnostic = Diagnostic.Create(
+                            DiagnosticDescriptors.CollectionLengthToEndUnsupportedType,
+                            property.Locations.FirstOrDefault(),
+                            property.Name,
+                            property.ContainingType?.Name ?? string.Empty,
+                            elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+                        accessor = null!;
+                        return false;
                     }
 
                     if (elementType.TypeKind == TypeKind.Struct || elementType.TypeKind == TypeKind.Class)
                     {
-                        if (!HasComputeSizeMethod(elementType))
+                        if (lengthStrategy.Kind == CollectionLengthKind.RemainingBytes)
+                        {
+                            diagnostic = Diagnostic.Create(
+                                DiagnosticDescriptors.CollectionLengthToEndUnsupportedType,
+                                property.Locations.FirstOrDefault(),
+                                property.Name,
+                                property.ContainingType?.Name ?? string.Empty,
+                                elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+                            accessor = null!;
+                            return false;
+                        }
+
+                        var requiresVersionContext = TypeHasVersionDependentSizeAttribute(elementType);
+                        if (requiresVersionContext && !inheritsFullBox)
+                        {
+                            diagnostic = Diagnostic.Create(
+                                DiagnosticDescriptors.VersionAttributeInvalidUsage,
+                                property.Locations.FirstOrDefault(),
+                                property.Name,
+                                property.ContainingType?.Name ?? string.Empty);
+                            accessor = null!;
+                            return false;
+                        }
+
+                        if (!HasComputeSizeMethod(elementType, requiresVersionContext))
                         {
                             diagnostic = Diagnostic.Create(
                                 DiagnosticDescriptors.CollectionElementMissingComputeSize,
@@ -796,7 +973,7 @@ public sealed partial class BoxContentGenerator
                         }
 
                         var elementTypeName = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                        accessor = ApplyFlag(new ListPropertyAccessor(null, isStructOrClass: true, elementTypeName, lengthStrategy));
+                        accessor = ApplyFlag(new ListPropertyAccessor(null, isStructOrClass: true, elementTypeName, lengthStrategy, requiresVersionContext));
                         return true;
                     }
                 }
@@ -972,6 +1149,21 @@ public sealed partial class BoxContentGenerator
                 default:
                     return false;
             }
+        }
+
+        private static bool TypeHasVersionDependentSizeAttribute(ITypeSymbol typeSymbol)
+        {
+            return typeSymbol.GetAttributes().Any(attribute => AttributeMatches(attribute, VersionDependentSizeAttributeMetadataName));
+        }
+
+        private static bool IsFixedSizePrimitive(ITypeSymbol typeSymbol)
+        {
+            return typeSymbol.SpecialType is SpecialType.System_Int16 or
+                SpecialType.System_UInt16 or
+                SpecialType.System_Int32 or
+                SpecialType.System_UInt32 or
+                SpecialType.System_Int64 or
+                SpecialType.System_UInt64;
         }
     }
 }

@@ -1,7 +1,4 @@
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -223,8 +220,9 @@ public sealed partial class BoxContentGenerator
         var attributes = property.GetAttributes();
         var sizeAttribute = attributes.FirstOrDefault(attribute => AttributeMatches(attribute, CollectionSizeAttributeMetadataName));
         var prefixAttribute = attributes.FirstOrDefault(attribute => AttributeMatches(attribute, CollectionLengthPrefixAttributeMetadataName));
+        var toEndAttribute = attributes.FirstOrDefault(attribute => AttributeMatches(attribute, CollectionLengthToEndAttributeMetadataName));
 
-        if ((sizeAttribute is not null || prefixAttribute is not null) && !supportsStrategy)
+        if ((sizeAttribute is not null || prefixAttribute is not null || toEndAttribute is not null) && !supportsStrategy)
         {
             diagnostic = Diagnostic.Create(
                 DiagnosticDescriptors.CollectionLengthAttributeInvalidPropertyType,
@@ -234,7 +232,9 @@ public sealed partial class BoxContentGenerator
             return CollectionLengthStrategy.None;
         }
 
-        if (sizeAttribute is not null && prefixAttribute is not null)
+        if ((sizeAttribute is not null && prefixAttribute is not null) ||
+            (sizeAttribute is not null && toEndAttribute is not null) ||
+            (prefixAttribute is not null && toEndAttribute is not null))
         {
             diagnostic = Diagnostic.Create(
                 DiagnosticDescriptors.CollectionLengthAttributeConflict,
@@ -242,6 +242,11 @@ public sealed partial class BoxContentGenerator
                 property.Name,
                 property.ContainingType?.Name ?? string.Empty);
             return CollectionLengthStrategy.None;
+        }
+
+        if (toEndAttribute is not null)
+        {
+            return CollectionLengthStrategy.RemainingBytes();
         }
 
         if (sizeAttribute is not null)
@@ -304,7 +309,7 @@ public sealed partial class BoxContentGenerator
             SpecialType.System_UInt64;
     }
 
-    private static bool HasComputeSizeMethod(ITypeSymbol type)
+    private static bool HasComputeSizeMethod(ITypeSymbol type, bool requiresVersionContext)
     {
         for (var current = type; current is not null; current = current.BaseType)
         {
@@ -312,8 +317,9 @@ public sealed partial class BoxContentGenerator
             {
                 if (member is IMethodSymbol method &&
                     !method.IsStatic &&
-                    method.Parameters.Length == 0 &&
-                    method.ReturnType.SpecialType == SpecialType.System_Int32)
+                    method.ReturnType.SpecialType == SpecialType.System_Int32 &&
+                    ((method.Parameters.Length == 1 && IsVersionAndFlagsType(method.Parameters[0].Type)) ||
+                     (!requiresVersionContext && method.Parameters.Length == 0)))
                 {
                     return true;
                 }
@@ -323,18 +329,39 @@ public sealed partial class BoxContentGenerator
         return false;
     }
 
-    private static bool TryCreatePrimitiveElementAccessor(ITypeSymbol elementType, out PropertyAccessor accessor)
+    private static bool IsVersionAndFlagsType(ITypeSymbol type)
     {
-        accessor = elementType.SpecialType switch
+        return string.Equals(
+            type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            $"global::{VersionAndFlagsMetadataName}",
+            StringComparison.Ordinal);
+    }
+
+    private static bool TryCreatePrimitiveElementAccessor(ITypeSymbol elementType, out PropertyAccessor accessor, out string elementSizeExpression)
+    {
+        elementSizeExpression = elementType.SpecialType switch
         {
-            SpecialType.System_Int16 => new SimplePropertyAccessor("ReadInt16()", "writer.WriteInt16({0});", "sizeof(short)"),
-            SpecialType.System_UInt16 => new SimplePropertyAccessor("ReadUInt16()", "writer.WriteUInt16({0});", "sizeof(ushort)"),
-            SpecialType.System_Int32 => new SimplePropertyAccessor("ReadInt32()", "writer.WriteInt32({0});", "sizeof(int)"),
-            SpecialType.System_UInt32 => new SimplePropertyAccessor("ReadUInt32()", "writer.WriteUInt32({0});", "sizeof(uint)"),
-            SpecialType.System_Int64 => new SimplePropertyAccessor("ReadInt64()", "writer.WriteInt64({0});", "sizeof(long)"),
-            SpecialType.System_UInt64 => new SimplePropertyAccessor("ReadUInt64()", "writer.WriteUInt64({0});", "sizeof(ulong)"),
-            _ => null!
+            SpecialType.System_Int16 => "sizeof(short)",
+            SpecialType.System_UInt16 => "sizeof(ushort)",
+            SpecialType.System_Int32 => "sizeof(int)",
+            SpecialType.System_UInt32 => "sizeof(uint)",
+            SpecialType.System_Int64 => "sizeof(long)",
+            SpecialType.System_UInt64 => "sizeof(ulong)",
+            _ => string.Empty
         };
+
+        accessor = elementSizeExpression.Length > 0
+            ? elementType.SpecialType switch
+            {
+                SpecialType.System_Int16 => new SimplePropertyAccessor("ReadInt16()", "writer.WriteInt16({0});", "sizeof(short)"),
+                SpecialType.System_UInt16 => new SimplePropertyAccessor("ReadUInt16()", "writer.WriteUInt16({0});", "sizeof(ushort)"),
+                SpecialType.System_Int32 => new SimplePropertyAccessor("ReadInt32()", "writer.WriteInt32({0});", "sizeof(int)"),
+                SpecialType.System_UInt32 => new SimplePropertyAccessor("ReadUInt32()", "writer.WriteUInt32({0});", "sizeof(uint)"),
+                SpecialType.System_Int64 => new SimplePropertyAccessor("ReadInt64()", "writer.WriteInt64({0});", "sizeof(long)"),
+                SpecialType.System_UInt64 => new SimplePropertyAccessor("ReadUInt64()", "writer.WriteUInt64({0});", "sizeof(ulong)"),
+                _ => null!
+            }
+            : null!;
 
         return accessor is not null;
     }
