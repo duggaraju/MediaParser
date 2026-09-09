@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Local.testsettings" />
+  </Folder>
+  <Project Path="src/MP4Parser.SourceGenerators/MP4Parser.SourceGenerators.csproj" />
+  <Project Path="src/MP4Parser.Tests/MP4Parser.Tests.csproj" />
+  <Project Path="src/MP4Parser/MP4Parser.csproj" />
+  <Project Path="tools/BoxDump/BoxDump.csproj" />
+</Solution>

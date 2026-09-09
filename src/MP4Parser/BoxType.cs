@@ -1,60 +1,59 @@
 ﻿
 namespace Media.ISO
 {
-    // https://www.rapidtables.com/code/text/ascii-table.html
     public enum BoxType : uint
     {
-        FileBox = 0x66747970,
-        MovieBox = 0x6d6f6f76,
-        MovieHeaderBox = 0x6d766864,
-        TrackBox = 0x7472616b,
-        TrackHeaderBox = 0x746b6864,
+        FileBox = ('f' << 24) | ('t' << 16) | ('y' << 8) | 'p',
+        MovieBox = ('m' << 24) | ('o' << 16) | ('o' << 8) | 'v',
+        MovieHeaderBox = ('m' << 24) | ('v' << 16) | ('h' << 8) | 'd',
+        TrackBox = ('t' << 24) | ('r' << 16) | ('a' << 8) | 'k',
+        TrackHeaderBox = ('t' << 24) | ('k' << 16) | ('h' << 8) | 'd',
 
-        MediaBox = 0x6d646961,
-        MediaHeaderBox = 0x6d646864,
-        VideoMediaHeaderBox = 0x766d6864,
-        MediaDataBox = 0x6d646174,
-        MediaInformationBox = 0x6D696E66,
-        DataInformationBox = 0x75756967,
-        HandlerBox = 0x68646C72,
+        MediaBox = ('m' << 24) | ('d' << 16) | ('i' << 8) | 'a',
+        MediaHeaderBox = ('m' << 24) | ('d' << 16) | ('h' << 8) | 'd',
+        VideoMediaHeaderBox = ('v' << 24) | ('m' << 16) | ('h' << 8) | 'd',
+        MediaDataBox = ('m' << 24) | ('d' << 16) | ('a' << 8) | 't',
+        MediaInformationBox = ('m' << 24) | ('i' << 16) | ('n' << 8) | 'f',
+        DataInformationBox = ('u' << 24) | ('u' << 16) | ('i' << 8) | 'g',
+        HandlerBox = ('h' << 24) | ('d' << 16) | ('l' << 8) | 'r',
 
-        UserDataBox = 0x75647461,
-        MetaBox = 0x6d657461,
-        MovieExtendsBox = 0x6d657874,
-        TrackExtendsBox = 0x75756965,
-        EditBox = 0x65647473,
-        EditListBox = 0x65637374,
+        UserDataBox = ('u' << 24) | ('d' << 16) | ('t' << 8) | 'a',
+        MetaBox = ('m' << 24) | ('e' << 16) | ('t' << 8) | 'a',
+        MovieExtendsBox = ('m' << 24) | ('e' << 16) | ('x' << 8) | 't',
+        TrackExtendsBox = ('u' << 24) | ('u' << 16) | ('i' << 8) | 'e',
+        EditBox = ('e' << 24) | ('d' << 16) | ('t' << 8) | 's',
+        EditListBox = ('e' << 24) | ('c' << 16) | ('s' << 8) | 't',
 
-        SampleTableBox = 0x7374626c,
-        SampleDescriptionBox = 0x73747364,
-        TimeToSampleBox = 0x73747473,
-        SampleToChunkBox = 0x73746368,
-        SampleSizeBox = 0x7374737a,
-        ChunkOffsetBox = 0x7374636f,
+        SampleTableBox = ('s' << 24) | ('t' << 16) | ('b' << 8) | 'l',
+        SampleDescriptionBox = ('s' << 24) | ('t' << 16) | ('s' << 8) | 'd',
+        TimeToSampleBox = ('s' << 24) | ('t' << 16) | ('t' << 8) | 's',
+        SampleToChunkBox = ('s' << 24) | ('t' << 16) | ('c' << 8) | 'h',
+        SampleSizeBox = ('s' << 24) | ('t' << 16) | ('s' << 8) | 'z',
+        ChunkOffsetBox = ('s' << 24) | ('t' << 16) | ('c' << 8) | 'o',
 
         //misc boxes.
-        FreeBox = 0x66726565,
-        SkipBox = 0x736b6970,
-        UuidBox = 0x75756964,
+        FreeBox = ('f' << 24) | ('r' << 16) | ('e' << 8) | 'e',
+        SkipBox = ('s' << 24) | ('k' << 16) | ('i' << 8) | 'p',
+        UuidBox = ('u' << 24) | ('u' << 16) | ('i' << 8) | 'd',
 
         //CMAF boxes.
-        EmsgBox = 0x656d7367,
-        TrackFragmentDecodeTimeBox = 0x74666474,
-        PrftBox = 0x50726674,
-        SegmentIndexBox = 0x73696478,
+        EmsgBox = ('e' << 24) | ('m' << 16) | ('s' << 8) | 'g',
+        TrackFragmentDecodeTimeBox = ('t' << 24) | ('f' << 16) | ('d' << 8) | 't',
+        PrftBox = ('p' << 24) | ('r' << 16) | ('f' << 8) | 't',
+        SegmentIndexBox = ('s' << 24) | ('i' << 16) | ('d' << 8) | 'x',
 
         // Fragmented MP4 file boxes.
-        MovieFragmentBox = 0x6d6f6f66,
-        MovieFragmentHeaderBox = 0x6d666864,
-        TrackFragmentBox = 0x74726166,
-        TrackFragmentHeaderBox = 0x74666864,
-        TrackFragmentRunBox = 0x7472756e,
-        SampleDependencyTypeBox = 0x73647470,
-        MovieFragmentRandomAccessBox = 0x6d667261,
-        TrackFragmentRandomAccessBox = 0x74667261,
-        MovieFragmentRandomOffsetBox = 0x6d66726f,
+        MovieFragmentBox = ('m' << 24) | ('o' << 16) | ('o' << 8) | 'f',
+        MovieFragmentHeaderBox = ('m' << 24) | ('f' << 16) | ('h' << 8) | 'd',
+        TrackFragmentBox = ('t' << 24) | ('r' << 16) | ('a' << 8) | 'f',
+        TrackFragmentHeaderBox = ('t' << 24) | ('f' << 16) | ('h' << 8) | 'd',
+        TrackFragmentRunBox = ('t' << 24) | ('r' << 16) | ('u' << 8) | 'n',
+        SampleDependencyTypeBox = ('s' << 24) | ('d' << 16) | ('t' << 8) | 'p',
+        MovieFragmentRandomAccessBox = ('m' << 24) | ('f' << 16) | ('r' << 8) | 'a',
+        TrackFragmentRandomAccessBox = ('t' << 24) | ('f' << 16) | ('r' << 8) | 'a',
+        MovieFragmentRandomOffsetBox = ('m' << 24) | ('f' << 16) | ('r' << 8) | 'o',
 
         // Test/support boxes.
-        ReservedFieldsBox = 0x72737662,
+        ReservedFieldsBox = ('r' << 24) | ('s' << 16) | ('v' << 8) | 'b',
     }
 }
